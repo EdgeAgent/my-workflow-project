@@ -1,0 +1,394 @@
+{
+  "name": "AI-Powered Trend Hijacker & Viral Content Machine",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -464,
+        192
+      ],
+      "id": "a5df34c4-6b86-4ea8-ae13-4657a80ec7e2"
+    },
+    {
+      "parameters": {
+        "url": "https://api.twitter.com/2/trends/place.json",
+        "options": {}
+      },
+      "name": "Twitter Trending Topics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        80
+      ],
+      "id": "c27b1294-2a9b-41e4-9aac-c6611b808a12"
+    },
+    {
+      "parameters": {
+        "url": "https://www.reddit.com/r/all/hot.json?limit=100",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "n8n-workflow-agent"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "name": "Reddit Hot Posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        240
+      ],
+      "id": "d93472c6-f4b9-44f0-8ce7-2779155cb48a"
+    },
+    {
+      "parameters": {
+        "url": "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US",
+        "options": {}
+      },
+      "name": "Google Trends",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        416
+      ],
+      "id": "8aace8ca-f11e-4316-84c7-f508c4d2ef45"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {}
+      },
+      "name": "Merge Trends",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        32,
+        96
+      ],
+      "id": "3df36d8f-94df-47bd-b35e-00c778a26235"
+    },
+    {
+      "parameters": {
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "content": "=Analyze these trends and identify:\n1. Which trends align with a general audience\n2. Engagement potential (1-10)\n3. Controversy risk (low/medium/high)\n4. Suggested content angle\n5. Recommended platforms (Twitter/TikTok/Instagram/LinkedIn)\n\nTrends: {{ $json }}"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.7
+        }
+      },
+      "name": "AI Trend Analysis",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        48,
+        320
+      ],
+      "id": "f35b0390-740b-4ed1-88a0-944285ace025"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.engagement_potential }}",
+              "rightValue": "7",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "leftValue": "={{ $json.controversy_risk }}",
+              "rightValue": "high",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "Filter High Engagement",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        336,
+        160
+      ],
+      "id": "9ee5b098-485c-4360-933d-6a827c7e553e"
+    },
+    {
+      "parameters": {
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "content": "=Generate 3 engaging social media post variations for this trend: {{ $json.content_angle }}\n\nInclude:\n- Catchy hooks\n- Relevant hashtags\n- Call-to-action\n- Personality: witty and engaging"
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.8
+        }
+      },
+      "name": "Generate Captions",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        528,
+        80
+      ],
+      "id": "9a2f21c9-5fa4-4d16-a544-0353e57f8f91"
+    },
+    {
+      "parameters": {
+        "operation": "create"
+      },
+      "name": "Generate Image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        544,
+        336
+      ],
+      "id": "58e76bc3-725a-43b3-8c9e-aaffa13b7efb"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {}
+      },
+      "name": "Combine Content & Image",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        752,
+        256
+      ],
+      "id": "a3a8e73b-636a-4b97-8ff2-3926da7a03fc"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.caption }}",
+        "additionalFields": {}
+      },
+      "name": "Post to Twitter",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        944,
+        144
+      ],
+      "id": "a59d1696-3f5b-4d1c-9b97-7382dd8c72c5"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.caption }}",
+        "additionalFields": {}
+      },
+      "name": "Post to LinkedIn",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        944,
+        256
+      ],
+      "id": "73a3d3ce-1727-41a1-8849-5787d58c1a84"
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "name": "Save to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        944,
+        384
+      ],
+      "id": "0d96ad32-c746-4da9-872f-e405b042b385"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Twitter Trending Topics",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Reddit Hot Posts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter Trending Topics": {
+      "main": [
+        [
+          {
+            "node": "Merge Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reddit Hot Posts": {
+      "main": [
+        [
+          {
+            "node": "Merge Trends",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Trends": {
+      "main": [
+        [
+          {
+            "node": "AI Trend Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Trend Analysis": {
+      "main": [
+        [
+          {
+            "node": "Filter High Engagement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter High Engagement": {
+      "main": [
+        [
+          {
+            "node": "Generate Captions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Captions": {
+      "main": [
+        [
+          {
+            "node": "Combine Content & Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Combine Content & Image",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine Content & Image": {
+      "main": [
+        [
+          {
+            "node": "Post to Twitter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Post to LinkedIn",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

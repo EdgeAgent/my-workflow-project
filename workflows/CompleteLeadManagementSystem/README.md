@@ -1,0 +1,1619 @@
+# Workflow: Complete Lead Management System
+
+## Overview
+
+This document provides an overview of the 'Complete Lead Management System' workflow.
+
+## Workflow Steps (Nodes)
+
+| Step Name | Type |
+|-----------|------|
+| Daily Lead Search | n8n-nodes-base.scheduleTrigger |
+| Define ICP | n8n-nodes-base.set |
+| Apollo Lead Search | n8n-nodes-base.httpRequest |
+| Parse Apollo Results | n8n-nodes-base.code |
+| Enrich with Clearbit | n8n-nodes-base.httpRequest |
+| Merge Enrichment Data | n8n-nodes-base.code |
+| Scrape Company Website | n8n-nodes-base.code |
+| Claude AI Qualification | n8n-nodes-base.httpRequest |
+| Parse Qualification Score | n8n-nodes-base.code |
+| Filter High Score Leads | n8n-nodes-base.filter |
+| Generate Email Sequence | n8n-nodes-base.httpRequest |
+| Generate LinkedIn Sequence | n8n-nodes-base.httpRequest |
+| Merge All Sequences | n8n-nodes-base.code |
+| Save to Google Sheets | n8n-nodes-base.googleSheets |
+| Wait 2 Hours | n8n-nodes-base.wait |
+| Send Email 1 | n8n-nodes-base.emailSend |
+| Wait 3 Days | n8n-nodes-base.wait |
+| Check No Reply | n8n-nodes-base.if |
+| Send Email 2 | n8n-nodes-base.emailSend |
+| Wait 4 Days | n8n-nodes-base.wait |
+| Check No Reply 2 | n8n-nodes-base.if |
+| Send Email 3 (Break-up) | n8n-nodes-base.emailSend |
+| Save to Airtable CRM | n8n-nodes-base.httpRequest |
+| Update Tracking Data | n8n-nodes-base.set |
+| Slack Notification | n8n-nodes-base.httpRequest |
+| Check If High Value Lead | n8n-nodes-base.if |
+| Lead Intake Webhook | n8n-nodes-base.webhook |
+| Calculate Lead Score | n8n-nodes-base.function |
+| Format Lead Data | n8n-nodes-base.set |
+| Create HubSpot Contact | n8n-nodes-base.hubspot |
+| Check Lead Score | n8n-nodes-base.if |
+| Send Welcome SMS | n8n-nodes-base.twilio |
+| Send Welcome Email | n8n-nodes-base.sendGrid |
+| Send Messenger Welcome | n8n-nodes-base.facebookMessenger |
+| Send Nurture Email | n8n-nodes-base.sendGrid |
+| Operator Handoff Webhook | n8n-nodes-base.webhook |
+| Create Mission Brief | n8n-nodes-base.set |
+| Send Operator Brief | n8n-nodes-base.sendGrid |
+| Create Calendar Event | n8n-nodes-base.googleCalendar |
+| Send Meeting SMS | n8n-nodes-base.twilio |
+| Send Meeting Email | n8n-nodes-base.sendGrid |
+| Post-Meeting Webhook | n8n-nodes-base.webhook |
+| Request Documents | n8n-nodes-base.sendGrid |
+| Wait 7 Days | n8n-nodes-base.wait |
+| Create Follow-up Task | n8n-nodes-base.hubspot |
+| Power Dialer Schedule | n8n-nodes-base.scheduleTrigger |
+| Get Cold Leads | n8n-nodes-base.googleSheets |
+| Dial Lead | n8n-nodes-base.twilio |
+| Wait for Connection | n8n-nodes-base.wait |
+| Transfer to Operator | n8n-nodes-base.twilio |
+| Missed Call Webhook | n8n-nodes-base.webhook |
+| AI Voice Callback | n8n-nodes-base.httpRequest |
+
+## Raw JSON
+
+```json
+{
+  "name": "Complete Lead Management System",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "23ee058b-c4fc-4bb9-a106-8115bdff2afa",
+      "name": "Daily Lead Search",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -5008,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "icp-job-title",
+              "name": "jobTitle",
+              "value": "CEO",
+              "type": "string"
+            },
+            {
+              "id": "icp-company",
+              "name": "companyType",
+              "value": "Digital Marketing Agency",
+              "type": "string"
+            },
+            {
+              "id": "icp-location",
+              "name": "location",
+              "value": "New York",
+              "type": "string"
+            },
+            {
+              "id": "icp-size",
+              "name": "companySize",
+              "value": "1-50",
+              "type": "string"
+            },
+            {
+              "id": "icp-industry",
+              "name": "industry",
+              "value": "Marketing",
+              "type": "string"
+            },
+            {
+              "id": "leads-per-day",
+              "name": "leadsPerDay",
+              "value": 50,
+              "type": "number"
+            },
+            {
+              "id": "your-company",
+              "name": "yourCompany",
+              "value": "Your Company Name",
+              "type": "string"
+            },
+            {
+              "id": "value-prop",
+              "name": "valueProposition",
+              "value": "We help digital marketing agencies scale their outreach and generate more qualified leads through AI-powered automation.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0ca43e2d-3d37-4690-bedf-83fd60aacb08",
+      "name": "Define ICP",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -4784,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/mixed_people/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "={{ $credentials.apolloApiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "person_titles",
+              "value": "=[\"{{ $('Define ICP').item.json.jobTitle }}\"]"
+            },
+            {
+              "name": "person_locations",
+              "value": "=[\"{{ $('Define ICP').item.json.location }}\"]"
+            },
+            {
+              "name": "organization_num_employees_ranges",
+              "value": "=[\"1,50\"]"
+            },
+            {
+              "name": "page",
+              "value": "=1"
+            },
+            {
+              "name": "per_page",
+              "value": "={{ $('Define ICP').item.json.leadsPerDay }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "20fbae86-9c3b-405d-b0c6-b9bd0782c5d2",
+      "name": "Apollo Lead Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -4800,
+        64
+      ],
+      "notes": "Replace with your Apollo.io API key in credentials"
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = [];\nconst people = $input.item.json.people || [];\n\nfor (const person of people) {\n  leads.push({\n    firstName: person.first_name || '',\n    lastName: person.last_name || '',\n    email: person.email || '',\n    title: person.title || '',\n    company: person.organization?.name || '',\n    companyWebsite: person.organization?.website_url || '',\n    linkedinUrl: person.linkedin_url || '',\n    city: person.city || '',\n    state: person.state || '',\n    country: person.country || '',\n    location: `${person.city || ''}, ${person.state || ''}`.trim(),\n    phone: person.phone_numbers?.[0]?.raw_number || '',\n    employeeCount: person.organization?.estimated_num_employees || 0\n  });\n}\n\nreturn leads.map(lead => ({ json: lead }));"
+      },
+      "id": "b11ce527-c6cb-4212-a9a8-c5e0936f9d0b",
+      "name": "Parse Apollo Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4608,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://person.clearbit.com/v2/combined/find?email={{ $json.email }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.clearbitApiKey }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1809a897-26a2-4f2a-adfb-ffe945b66d3c",
+      "name": "Enrich with Clearbit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -4400,
+        128
+      ],
+      "notes": "Optional - remove if you don't have Clearbit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseData = $('Parse Apollo Results').item.json;\nconst clearbitData = $input.item.json;\n\nlet enrichedLead = { ...baseData };\n\nif (clearbitData && clearbitData.person) {\n  enrichedLead.bio = clearbitData.person.bio || '';\n  enrichedLead.avatar = clearbitData.person.avatar || '';\n  enrichedLead.twitter = clearbitData.person.twitter?.handle || '';\n  enrichedLead.linkedin = clearbitData.person.linkedin?.handle || enrichedLead.linkedinUrl;\n}\n\nif (clearbitData && clearbitData.company) {\n  enrichedLead.companyDescription = clearbitData.company.description || '';\n  enrichedLead.companyIndustry = clearbitData.company.industry || '';\n  enrichedLead.companyTech = clearbitData.company.tech || [];\n}\n\nreturn { json: enrichedLead };"
+      },
+      "id": "c265de82-6a5c-470a-a116-e20a7a1c4d17",
+      "name": "Merge Enrichment Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4400,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst website = item.companyWebsite;\n\nif (!website || !website.startsWith('http')) {\n  return {\n    json: {\n      ...item,\n      companyDescription: item.companyDescription || 'No website available',\n      services: [],\n      websiteScraped: false\n    }\n  };\n}\n\ntry {\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: website,\n    timeout: 10000,\n    headers: {\n      'User-Agent': 'Mozilla/5.0 (compatible; LeadBot/1.0)'\n    }\n  });\n\n  let text = response.replace(/<script[^>]*>.*?<\\/script>/gi, '')\n    .replace(/<style[^>]*>.*?<\\/style>/gi, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n\n  const serviceKeywords = ['service', 'solution', 'offer', 'product', 'platform'];\n  const services = [];\n  \n  serviceKeywords.forEach(keyword => {\n    const regex = new RegExp(`([^.]*${keyword}[^.]*\\.)`, 'gi');\n    const matches = text.match(regex);\n    if (matches) {\n      services.push(...matches.slice(0, 2));\n    }\n  });\n\n  return {\n    json: {\n      ...item,\n      companyDescription: item.companyDescription || text.substring(0, 500),\n      services: services.slice(0, 5),\n      websiteScraped: true\n    }\n  };\n} catch (error) {\n  return {\n    json: {\n      ...item,\n      companyDescription: item.companyDescription || 'Unable to scrape website',\n      services: [],\n      websiteScraped: false\n    }\n  };\n}"
+      },
+      "id": "3cffb4fb-5281-4f38-b269-ced194940ebf",
+      "name": "Scrape Company Website",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4176,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 1500,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze this lead and provide a detailed qualification score from 0-10 based on fit with the ICP.\\n\\nLead Information:\\n- Name: {{ $json.firstName }} {{ $json.lastName }}\\n- Title: {{ $json.title }}\\n- Company: {{ $json.company }}\\n- Company Description: {{ $json.companyDescription }}\\n- Location: {{ $json.location }}\\n- Employee Count: {{ $json.employeeCount }}\\n- Services: {{ $json.services.join(', ') }}\\n- Website: {{ $json.companyWebsite }}\\n\\nICP Criteria:\\n- Target Title: {{ $('Define ICP').item.json.jobTitle }}\\n- Target Industry: {{ $('Define ICP').item.json.industry }}\\n- Target Location: {{ $('Define ICP').item.json.location }}\\n- Target Company Type: {{ $('Define ICP').item.json.companyType }}\\n- Target Size: {{ $('Define ICP').item.json.companySize }} employees\\n\\nYou MUST respond with ONLY a valid JSON object. DO NOT include any other text, explanations, or markdown formatting. Use this EXACT format:\\n\\n{\\n  \\\"score\\\": 8,\\n  \\\"reasoning\\\": \\\"Brief explanation of the score\\\",\\n  \\\"keyInsights\\\": [\\\"insight1\\\", \\\"insight2\\\", \\\"insight3\\\"],\\n  \\\"painPoints\\\": [\\\"pain1\\\", \\\"pain2\\\"],\\n  \\\"recommendedApproach\\\": \\\"Strategy for personalization\\\",\\n  \\\"icebreaker\\\": \\\"Specific icebreaker idea based on their business\\\"\\n}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "b3241a77-56c0-4c2d-a158-44277505b500",
+      "name": "Claude AI Qualification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -4192,
+        -48
+      ],
+      "notes": "Requires Anthropic API credentials"
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseData = $('Scrape Company Website').item.json;\nconst claudeResponse = $input.item.json;\n\nlet qualificationData = {\n  score: 5,\n  reasoning: 'Unable to parse qualification',\n  keyInsights: [],\n  painPoints: [],\n  recommendedApproach: 'Generic approach',\n  icebreaker: 'Generic icebreaker'\n};\n\ntry {\n  const responseText = claudeResponse.content[0].text;\n  const cleanText = responseText\n    .replace(/```json\\n?/g, '')\n    .replace(/```\\n?/g, '')\n    .trim();\n  \n  qualificationData = JSON.parse(cleanText);\n} catch (error) {\n  console.error('Error parsing Claude response:', error);\n}\n\nreturn {\n  json: {\n    ...baseData,\n    qualificationScore: qualificationData.score,\n    qualificationReasoning: qualificationData.reasoning,\n    keyInsights: qualificationData.keyInsights || [],\n    painPoints: qualificationData.painPoints || [],\n    recommendedApproach: qualificationData.recommendedApproach,\n    icebreaker: qualificationData.icebreaker,\n    qualifiedAt: new Date().toISOString()\n  }\n};"
+      },
+      "id": "c0a2d46a-4119-4434-87da-d6c2db905abe",
+      "name": "Parse Qualification Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3968,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.qualificationScore }}",
+              "operation": "largerEqual",
+              "value2": 7
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5d3ddb37-9f83-4eb3-9bf5-72539622e982",
+      "name": "Filter High Score Leads",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        -3984,
+        -16
+      ],
+      "notes": "Only process leads with score >= 7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 3000,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Create a highly personalized 3-email cold outreach sequence for this prospect.\\n\\nProspect Details:\\n- Name: {{ $json.firstName }} {{ $json.lastName }}\\n- Title: {{ $json.title }}\\n- Company: {{ $json.company }}\\n- Company Description: {{ $json.companyDescription }}\\n- Location: {{ $json.location }}\\n- Key Insights: {{ $json.keyInsights.join(', ') }}\\n- Pain Points: {{ $json.painPoints.join(', ') }}\\n- Recommended Approach: {{ $json.recommendedApproach }}\\n- Icebreaker Idea: {{ $json.icebreaker }}\\n- Qualification Score: {{ $json.qualificationScore }}/10\\n\\nOur Company Information:\\n- Company: {{ $('Define ICP').item.json.yourCompany }}\\n- Value Proposition: {{ $('Define ICP').item.json.valueProposition }}\\n\\nEmail Guidelines:\\n1. EMAIL 1 (Introduction): Use the icebreaker, reference something specific about their business, introduce value prop briefly, soft CTA (reply/calendar link)\\n2. EMAIL 2 (Value): Share a relevant insight, case study snippet, or specific benefit. Stronger CTA.\\n3. EMAIL 3 (Break-up/Last Touch): Creative final attempt, leave door open, provide easy way to connect\\n\\nEach email should:\\n- Be conversational and natural (not salesy)\\n- Reference specific details about their company\\n- Keep subject lines under 50 characters\\n- Keep body under 150 words\\n- Include clear but non-pushy CTA\\n- Feel personalized (not templated)\\n\\nIMPORTANT: Respond with ONLY valid JSON. DO NOT include markdown, backticks, or any text outside the JSON object.\\n\\nFormat:\\n{\\n  \\\"email1\\\": {\\n    \\\"subject\\\": \\\"subject line\\\",\\n    \\\"body\\\": \\\"email body with [First Name] placeholder\\\",\\n    \\\"cta\\\": \\\"specific call to action\\\"\\n  },\\n  \\\"email2\\\": {\\n    \\\"subject\\\": \\\"subject line\\\",\\n    \\\"body\\\": \\\"email body with [First Name] placeholder\\\",\\n    \\\"cta\\\": \\\"specific call to action\\\"\\n  },\\n  \\\"email3\\\": {\\n    \\\"subject\\\": \\\"subject line\\\",\\n    \\\"body\\\": \\\"email body with [First Name] placeholder\\\",\\n    \\\"cta\\\": \\\"specific call to action\\\"\\n  }\\n}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "192d1852-08ee-4a11-869d-6000def14efb",
+      "name": "Generate Email Sequence",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3776,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 2000,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Create a 3-message LinkedIn outreach sequence for this prospect.\\n\\nProspect Details:\\n- Name: {{ $json.firstName }}\\n- Title: {{ $json.title }}\\n- Company: {{ $json.company }}\\n- Key Insights: {{ $json.keyInsights.join(', ') }}\\n- Icebreaker: {{ $json.icebreaker }}\\n\\nOur Company: {{ $('Define ICP').item.json.yourCompany }}\\nValue Prop: {{ $('Define ICP').item.json.valueProposition }}\\n\\nLinkedIn Message Guidelines:\\n1. MESSAGE 1 (Connection Request): Very brief (300 char max), reference commonality or their work, friendly tone\\n2. MESSAGE 2 (After Connection): Thank them, provide specific value/insight, soft intro to what you do\\n3. MESSAGE 3 (Follow-up): Share relevant resource or insight, gentle CTA\\n\\nRequirements:\\n- Ultra conversational (like texting a colleague)\\n- Each message under 100 words\\n- No corporate jargon\\n- Natural, warm tone\\n- Reference specific aspects of their profile/company\\n\\nIMPORTANT: Respond with ONLY valid JSON. DO NOT include markdown or backticks.\\n\\nFormat:\\n{\\n  \\\"message1\\\": \\\"connection request note with [First Name] placeholder\\\",\\n  \\\"message2\\\": \\\"follow up message after connection\\\",\\n  \\\"message3\\\": \\\"value-add message with soft CTA\\\"\\n}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "e2b4b1f7-e4a2-4102-a09f-9f5b7e3d2ec7",
+      "name": "Generate LinkedIn Sequence",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3792,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseData = $('Filter High Score Leads').item.json;\nconst emailResponse = $('Generate Email Sequence').item.json;\nconst linkedinResponse = $('Generate LinkedIn Sequence').item.json;\n\nlet emailSequence = {\n  email1: { subject: '', body: '', cta: '' },\n  email2: { subject: '', body: '', cta: '' },\n  email3: { subject: '', body: '', cta: '' }\n};\n\nlet linkedinSequence = {\n  message1: '',\n  message2: '',\n  message3: ''\n};\n\ntry {\n  const emailText = emailResponse.content[0].text;\n  const cleanEmail = emailText\n    .replace(/```json\\n?/g, '')\n    .replace(/```\\n?/g, '')\n    .trim();\n  emailSequence = JSON.parse(cleanEmail);\n} catch (error) {\n  console.error('Error parsing email sequence:', error);\n}\n\ntry {\n  const linkedinText = linkedinResponse.content[0].text;\n  const cleanLinkedIn = linkedinText\n    .replace(/```json\\n?/g, '')\n    .replace(/```\\n?/g, '')\n    .trim();\n  linkedinSequence = JSON.parse(cleanLinkedIn);\n} catch (error) {\n  console.error('Error parsing LinkedIn sequence:', error);\n}\n\nconst replaceNames = (text) => {\n  return text\n    .replace(/\\[First Name\\]/g, baseData.firstName)\n    .replace(/\\[Company\\]/g, baseData.company);\n};\n\nreturn {\n  json: {\n    ...baseData,\n    emailSequence: {\n      email1: {\n        subject: replaceNames(emailSequence.email1.subject),\n        body: replaceNames(emailSequence.email1.body),\n        cta: emailSequence.email1.cta\n      },\n      email2: {\n        subject: replaceNames(emailSequence.email2.subject),\n        body: replaceNames(emailSequence.email2.body),\n        cta: emailSequence.email2.cta\n      },\n      email3: {\n        subject: replaceNames(emailSequence.email3.subject),\n        body: replaceNames(emailSequence.email3.body),\n        cta: emailSequence.email3.cta\n      }\n    },\n    linkedinSequence: {\n      message1: replaceNames(linkedinSequence.message1),\n      message2: replaceNames(linkedinSequence.message2),\n      message3: replaceNames(linkedinSequence.message3)\n    },\n    sequenceGeneratedAt: new Date().toISOString(),\n    status: 'Ready for Outreach'\n  }\n};"
+      },
+      "id": "0a009792-fde1-44ff-9aca-354dd8048cef",
+      "name": "Merge All Sequences",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3616,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "AI Sales Leads"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.qualifiedAt }}",
+            "First Name": "={{ $json.firstName }}",
+            "Last Name": "={{ $json.lastName }}",
+            "Email": "={{ $json.email }}",
+            "Title": "={{ $json.title }}",
+            "Company": "={{ $json.company }}",
+            "Location": "={{ $json.location }}",
+            "Score": "={{ $json.qualificationScore }}",
+            "LinkedIn": "={{ $json.linkedinUrl }}",
+            "Email 1 Subject": "={{ $json.emailSequence.email1.subject }}",
+            "Email 1 Body": "={{ $json.emailSequence.email1.body }}",
+            "Status": "={{ $json.status }}",
+            "Key Insights": "={{ $json.keyInsights.join('; ') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "6a9b7f29-9650-42db-8fe9-f61a500be6e3",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -3440,
+        0
+      ],
+      "notes": "Configure with your Google Sheets credentials"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "hours"
+      },
+      "id": "01c93924-ad37-4de2-ad4d-6ff9181bbaec",
+      "name": "Wait 2 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -3248,
+        -64
+      ],
+      "webhookId": "wait-email1"
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-email@yourcompany.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.emailSequence.email1.subject }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "aeb38610-3098-4a18-9857-a3352d724813",
+      "name": "Send Email 1",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -3120,
+        80
+      ],
+      "webhookId": "2b1e6a72-159c-40fe-855a-a2a741af15c4",
+      "notes": "Configure with your email credentials (SMTP/SendGrid/Mailgun)"
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      },
+      "id": "d9927119-21cb-49df-a8bf-a7a9d808911e",
+      "name": "Wait 3 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2944,
+        -32
+      ],
+      "webhookId": "wait-email2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-reply",
+              "leftValue": "={{ $json.replied }}",
+              "rightValue": "=false",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dd058dcb-7d5c-47c6-a924-4a5bb22ea9dd",
+      "name": "Check No Reply",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2736,
+        -32
+      ],
+      "notes": "Only send email 2 if they haven't replied"
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-email@yourcompany.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.emailSequence.email2.subject }}",
+        "options": {}
+      },
+      "id": "93d1ef26-2f2a-4631-b349-a1698dd7b103",
+      "name": "Send Email 2",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -2736,
+        224
+      ],
+      "webhookId": "681edd39-de7c-421c-a717-a62febdc7d62"
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "days"
+      },
+      "id": "5d3651d8-423a-4a1a-b67d-074a9a4dc81e",
+      "name": "Wait 4 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2560,
+        112
+      ],
+      "webhookId": "wait-email3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-reply2",
+              "leftValue": "={{ $json.replied }}",
+              "rightValue": "=false",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4520bab7-29c6-4adb-be31-7246ff14c0c9",
+      "name": "Check No Reply 2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2544,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-email@yourcompany.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.emailSequence.email3.subject }}",
+        "options": {}
+      },
+      "id": "273320cb-b141-417a-9064-a1343f019cad",
+      "name": "Send Email 3 (Break-up)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -2336,
+        0
+      ],
+      "webhookId": "110c5d3e-5a13-47b9-881f-f98a2aec5e05"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.airtable.com/v0/YOUR_BASE_ID/Leads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.airtableApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"fields\": {\n    \"First Name\": \"{{ $json.firstName }}\",\n    \"Last Name\": \"{{ $json.lastName }}\",\n    \"Email\": \"{{ $json.email }}\",\n    \"Phone\": \"{{ $json.phone }}\",\n    \"Title\": \"{{ $json.title }}\",\n    \"Company\": \"{{ $json.company }}\",\n    \"Website\": \"{{ $json.companyWebsite }}\",\n    \"LinkedIn\": \"{{ $json.linkedinUrl }}\",\n    \"Location\": \"{{ $json.location }}\",\n    \"Score\": {{ $json.qualificationScore }},\n    \"Reasoning\": \"{{ $json.qualificationReasoning }}\",\n    \"Key Insights\": \"{{ $json.keyInsights.join(', ') }}\",\n    \"Pain Points\": \"{{ $json.painPoints.join(', ') }}\",\n    \"Email 1 Subject\": \"{{ $json.emailSequence.email1.subject }}\",\n    \"Email 1 Body\": \"{{ $json.emailSequence.email1.body }}\",\n    \"Email 2 Subject\": \"{{ $json.emailSequence.email2.subject }}\",\n    \"Email 2 Body\": \"{{ $json.emailSequence.email2.body }}\",\n    \"Email 3 Subject\": \"{{ $json.emailSequence.email3.subject }}\",\n    \"Email 3 Body\": \"{{ $json.emailSequence.email3.body }}\",\n    \"LinkedIn Message 1\": \"{{ $json.linkedinSequence.message1 }}\",\n    \"LinkedIn Message 2\": \"{{ $json.linkedinSequence.message2 }}\",\n    \"LinkedIn Message 3\": \"{{ $json.linkedinSequence.message3 }}\",\n    \"Status\": \"{{ $json.status }}\",\n    \"Qualified At\": \"{{ $json.qualifiedAt }}\",\n    \"Campaign\": \"AI Sales Machine - {{ new Date().toISOString().split('T')[0] }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "24d7fc15-c79a-4be4-b145-b8b9dc70a6e0",
+      "name": "Save to Airtable CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2960,
+        224
+      ],
+      "notes": "Optional - Save to Airtable as your CRM"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "update-status",
+              "name": "emailsSent",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "last-contact",
+              "name": "lastContactDate",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            },
+            {
+              "id": "replied-status",
+              "name": "replied",
+              "value": "=false",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f9f4df0f-4b5e-4751-aafb-fb04616ca3dd",
+      "name": "Update Tracking Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -3184,
+        352
+      ],
+      "notes": "Track email metrics - customize based on your needs"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"\ud83c\udfaf New Lead Qualified!\",\n  \"blocks\": [\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*New Qualified Lead*\\n{{ $json.firstName }} {{ $json.lastName }} from {{ $json.company }}\"\n      }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Score:*\\n{{ $json.qualificationScore }}/10\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Title:*\\n{{ $json.title }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Email:*\\n{{ $json.email }}\"\n        },\n        {\n          \"type\": \"mrkdwn\",\n          \"text\": \"*Status:*\\n{{ $json.status }}\"\n        }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": {\n        \"type\": \"mrkdwn\",\n        \"text\": \"*Key Insights:*\\n\u2022 {{ $json.keyInsights.join('\\\\n\u2022 ') }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "88e28215-e140-4279-b5d4-4c4f7504fd0b",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3472,
+        400
+      ],
+      "notes": "Optional - Send Slack notifications for high-value leads"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-value-check",
+              "leftValue": "={{ $json.qualificationScore }}",
+              "rightValue": "=9",
+              "operator": {
+                "type": "number",
+                "operation": "largerEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "54386093-d399-46a9-b42c-db45861c3be2",
+      "name": "Check If High Value Lead",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -3440,
+        176
+      ],
+      "notes": "Send notifications only for scores >= 9"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0ac86d1d-f1c6-4e65-84e5-7b159f91a352",
+      "name": "Lead Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -4960,
+        464
+      ],
+      "webhookId": "lead-intake-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Calculate lead score based on questionnaire\nconst creditScore = $input.item.json.creditScore || 0;\nconst income = $input.item.json.annualIncome || 0;\nconst loanAmount = $input.item.json.requestedLoanAmount || 0;\n\nlet score = 0;\n\n// Credit score scoring (max 40 points)\nif (creditScore >= 750) score += 40;\nelse if (creditScore >= 700) score += 30;\nelse if (creditScore >= 650) score += 20;\nelse if (creditScore >= 600) score += 10;\n\n// Income scoring (max 30 points)\nif (income >= 100000) score += 30;\nelse if (income >= 75000) score += 20;\nelse if (income >= 50000) score += 15;\nelse if (income >= 30000) score += 10;\n\n// Loan-to-income ratio (max 30 points)\nconst loanToIncome = income > 0 ? loanAmount / income : 0;\nif (loanToIncome <= 2) score += 30;\nelse if (loanToIncome <= 3) score += 20;\nelse if (loanToIncome <= 4) score += 10;\n\nreturn {\n  json: {\n    ...($input.item.json),\n    leadScore: score,\n    scoreCalculatedAt: new Date().toISOString()\n  }\n};"
+      },
+      "id": "dc3f3b2f-8811-49be-b807-ac66ecdee5f1",
+      "name": "Calculate Lead Score",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -4752,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "leadScore",
+              "value": "={{$json.leadScore}}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{$json.scoreCalculatedAt}}"
+            },
+            {
+              "name": "fullName",
+              "value": "={{$json.firstName}} {{$json.lastName}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "acf60f9c-45b0-46a7-9bc2-c892936273dd",
+      "name": "Format Lead Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -4560,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "create"
+      },
+      "id": "95a16cdb-3afa-4f54-94ba-4be925630e1d",
+      "name": "Create HubSpot Contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        -4352,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.leadScore}}",
+              "operation": "larger",
+              "value2": 70
+            }
+          ]
+        }
+      },
+      "id": "59bcc9ac-f287-4f37-baa1-e424c20f740f",
+      "name": "Check Lead Score",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -4160,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "message": "Hi {{$json.firstName}}! \ud83d\udc4b Thank you for your interest in our mortgage services. We're excited to help you find the perfect solution. You'll receive a detailed email shortly, and one of our specialists will reach out within 24 hours!",
+        "options": {}
+      },
+      "id": "13ba6a7d-b858-41a7-9fbf-381b7e11b254",
+      "name": "Send Welcome SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -3696,
+        576
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "32712731-59db-4c88-9f99-f1e55f1dcb88",
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -3952,
+        464
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "8364c1ec-17f5-4bc8-84ec-0cf7c25193b9",
+      "name": "Send Messenger Welcome",
+      "type": "n8n-nodes-base.facebookMessenger",
+      "typeVersion": 1,
+      "position": [
+        -3952,
+        560
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {},
+      "id": "b5b7cf94-dd85-4e19-8290-789ec9fba4bd",
+      "name": "Send Nurture Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -3504,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "operator-handoff",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b5f1c27a-5a35-4963-9b82-fb6a1fb4cfff",
+      "name": "Operator Handoff Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -4944,
+        784
+      ],
+      "webhookId": "operator-handoff-webhook"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "missionBrief",
+              "value": "=LEAD MISSION BRIEF\n\nName: {{$json.fullName}}\nPhone: {{$json.phone}}\nEmail: {{$json.email}}\n\nLEAD SCORE: {{$json.leadScore}}/100\n\nKEY DETAILS:\n- Credit Score: {{$json.creditScore}}\n- Annual Income: ${{$json.annualIncome}}\n- Requested Loan: ${{$json.requestedLoanAmount}}\n\nCOMMUNICATION HISTORY:\n- Welcome SMS sent: {{$json.smsSentAt}}\n- Welcome Email sent: {{$json.emailSentAt}}\n\nNEXT STEPS:\n1. Call lead within 4 hours\n2. Pre-qualify and assess needs\n3. Schedule consultation if qualified"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2fb85805-b440-40a0-a096-8f977455da12",
+      "name": "Create Mission Brief",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -4736,
+        784
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "16b4bee5-20d8-4630-9e1c-b2f86b261b89",
+      "name": "Send Operator Brief",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -4544,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "operation": "event",
+        "calendar": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "2baa1858-269c-499b-8943-7c6f763d1054",
+      "name": "Create Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        -4336,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "message": "Hi {{$json.clientName}}! Your mortgage consultation is confirmed for {{$json.meetingDateTime}}. Meeting link: {{$json.meetUrl}}. Looking forward to speaking with you!",
+        "options": {}
+      },
+      "id": "24b91318-ab11-4938-b811-a8178295ffac",
+      "name": "Send Meeting SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -4144,
+        736
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e2848c77-fe91-4e65-b50e-06213de1a9c8",
+      "name": "Send Meeting Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -4144,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-meeting",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "640bec84-78b5-4bba-8721-d0cca559696f",
+      "name": "Post-Meeting Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -4944,
+        1184
+      ],
+      "webhookId": "post-meeting-webhook"
+    },
+    {
+      "parameters": {},
+      "id": "18f442be-991c-41f1-b311-182bea98dde4",
+      "name": "Request Documents",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -4736,
+        1184
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 7,
+        "unit": "days"
+      },
+      "id": "b70607dc-22c6-419c-8464-5c317cddeea2",
+      "name": "Wait 7 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        -4544,
+        1184
+      ],
+      "webhookId": "b82e2ca8-fd5d-4dbf-9990-74c86d968e4f"
+    },
+    {
+      "parameters": {
+        "resource": "task"
+      },
+      "id": "e9891a12-b3ff-4e22-b26c-c965f40be3af",
+      "name": "Create Follow-up Task",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        -4336,
+        1184
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "176cf509-2b29-4d59-bfb5-c2ee382b16c4",
+      "name": "Power Dialer Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4944,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "sheetId": "={{$json.spreadsheetId}}",
+        "range": "ColdLeads!A2:D100",
+        "options": {}
+      },
+      "id": "279d6f39-f124-4bcd-bd57-1d8df0ff8ff8",
+      "name": "Get Cold Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        -4736,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "statusCallback": "https://your-n8n-instance.com/webhook/call-status"
+        }
+      },
+      "id": "489dfd5d-b3c1-4452-806a-ffa761b66060",
+      "name": "Dial Lead",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -4544,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "23d3cf75-1a25-4596-96a7-899ccfe43657",
+      "name": "Wait for Connection",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        -4336,
+        1584
+      ],
+      "webhookId": "03e7c8c6-1cf2-4132-85a5-666d4144bb70"
+    },
+    {
+      "parameters": {
+        "message": "Transferring call from {{$json.name}} at {{$json.phone}}",
+        "options": {}
+      },
+      "id": "bf9ded44-eb26-4844-984d-7fd9aeace73e",
+      "name": "Transfer to Operator",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -4144,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "missed-call",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3e99ef8d-290d-4d1b-ae1d-fc501153aeed",
+      "name": "Missed Call Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -4944,
+        1888
+      ],
+      "webhookId": "missed-call-webhook"
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "url": "https://api.vapi.ai/call",
+        "options": {}
+      },
+      "id": "7898e818-c9ea-4a1f-98a4-754522ef1004",
+      "name": "AI Voice Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -4736,
+        1888
+      ]
+    }
+  ],
+  "connections": {
+    "Daily Lead Search": {
+      "main": [
+        [
+          {
+            "node": "Define ICP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define ICP": {
+      "main": [
+        [
+          {
+            "node": "Apollo Lead Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Lead Search": {
+      "main": [
+        [
+          {
+            "node": "Parse Apollo Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Apollo Results": {
+      "main": [
+        [
+          {
+            "node": "Enrich with Clearbit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich with Clearbit": {
+      "main": [
+        [
+          {
+            "node": "Merge Enrichment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Enrichment Data": {
+      "main": [
+        [
+          {
+            "node": "Scrape Company Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Company Website": {
+      "main": [
+        [
+          {
+            "node": "Claude AI Qualification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude AI Qualification": {
+      "main": [
+        [
+          {
+            "node": "Parse Qualification Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Qualification Score": {
+      "main": [
+        [
+          {
+            "node": "Filter High Score Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter High Score Leads": {
+      "main": [
+        [
+          {
+            "node": "Generate Email Sequence",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate LinkedIn Sequence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Email Sequence": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sequences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate LinkedIn Sequence": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sequences",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Sequences": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save to Airtable CRM",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check If High Value Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Wait 2 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "Send Email 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 1": {
+      "main": [
+        [
+          {
+            "node": "Wait 3 Days",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Tracking Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3 Days": {
+      "main": [
+        [
+          {
+            "node": "Check No Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check No Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Email 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 2": {
+      "main": [
+        [
+          {
+            "node": "Wait 4 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 4 Days": {
+      "main": [
+        [
+          {
+            "node": "Check No Reply 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check No Reply 2": {
+      "main": [
+        [
+          {
+            "node": "Send Email 3 (Break-up)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If High Value Lead": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Intake Webhook": {
+      "main": [
+        [
+          {
+            "node": "Calculate Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Lead Score": {
+      "main": [
+        [
+          {
+            "node": "Format Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Create HubSpot Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create HubSpot Contact": {
+      "main": [
+        [
+          {
+            "node": "Check Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Lead Score": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome SMS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Welcome Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Nurture Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Operator Handoff Webhook": {
+      "main": [
+        [
+          {
+            "node": "Create Mission Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Mission Brief": {
+      "main": [
+        [
+          {
+            "node": "Send Operator Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Operator Brief": {
+      "main": [
+        [
+          {
+            "node": "Create Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Send Meeting SMS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Meeting Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post-Meeting Webhook": {
+      "main": [
+        [
+          {
+            "node": "Request Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Documents": {
+      "main": [
+        [
+          {
+            "node": "Wait 7 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7 Days": {
+      "main": [
+        [
+          {
+            "node": "Create Follow-up Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Power Dialer Schedule": {
+      "main": [
+        [
+          {
+            "node": "Get Cold Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Cold Leads": {
+      "main": [
+        [
+          {
+            "node": "Dial Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dial Lead": {
+      "main": [
+        [
+          {
+            "node": "Wait for Connection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Connection": {
+      "main": [
+        [
+          {
+            "node": "Transfer to Operator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Missed Call Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Voice Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}
+```

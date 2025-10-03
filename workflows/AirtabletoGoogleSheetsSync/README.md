@@ -1,0 +1,199 @@
+# Workflow: Airtable to Google Sheets Sync
+
+## Overview
+
+This document provides an overview of the 'Airtable to Google Sheets Sync' workflow.
+
+## Workflow Steps (Nodes)
+
+| Step Name | Type |
+|-----------|------|
+| When clicking 'Test workflow' | n8n-nodes-base.manualTrigger |
+| Airtable - Get Records | n8n-nodes-base.airtable |
+| Google Sheets - Add/Update Rows | n8n-nodes-base.googleSheets |
+| Google Sheets - Read Data | n8n-nodes-base.googleSheets |
+| Airtable - Update Records | n8n-nodes-base.airtable |
+| Schedule Trigger | n8n-nodes-base.scheduleTrigger |
+
+## Raw JSON
+
+```json
+{
+  "name": "Airtable to Google Sheets Sync",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "2ee68086-09fc-43b0-81c9-9d73a69711ef",
+      "name": "When clicking 'Test workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "list",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_TABLE_NAME",
+        "additionalOptions": {}
+      },
+      "id": "5562f35e-8f92-4981-b54d-58861d8167bb",
+      "name": "Airtable - Get Records",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        208,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Sheet Name"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.fields.Name }}",
+            "Email": "={{ $json.fields.Email }}",
+            "Status": "={{ $json.fields.Status }}",
+            "Created": "={{ $json.fields.Created }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "8e038447-fbde-43be-a716-c1a5c2ea6964",
+      "name": "Google Sheets - Add/Update Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        400,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Sheet Name"
+        }
+      },
+      "id": "3324eeba-d6f6-40f8-870b-45c6d0ba9772",
+      "name": "Google Sheets - Read Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "application": "YOUR_AIRTABLE_BASE_ID",
+        "table": "YOUR_TABLE_NAME",
+        "id": "={{ $json.airtable_id }}",
+        "options": {
+          "bulkSize": 10
+        }
+      },
+      "id": "8912756f-2f18-4ddc-835a-9c2769e5f767",
+      "name": "Airtable - Update Records",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        208,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "8e8c41ef-26e3-4c6f-b86e-7513742e9483",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Get Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable - Get Records": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Add/Update Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Read Data": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Update Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Airtable - Get Records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}
+```

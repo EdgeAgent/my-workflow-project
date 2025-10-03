@@ -1,0 +1,476 @@
+{
+  "name": "AASGARD 5.0 - Personal AI Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "9c33389b-b0ee-487c-8ea1-fe0b756aa4e0",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1984,
+        96
+      ],
+      "webhookId": "your-telegram-webhook-id"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e8645815-3094-4172-8019-39ff29332f6e",
+      "name": "AI Command Analyzer",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -1808,
+        224
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "3f400eee-e558-4c9f-bbef-7c3258becb01",
+      "name": "Prepare AI Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "messages": {
+          "values": [
+            {}
+          ]
+        },
+        "options": {
+          "maxTokens": 500,
+          "temperature": 0.3
+        }
+      },
+      "id": "3cbd73cc-63a7-4422-914d-60ef979e6255",
+      "name": "OpenAI Chat",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [
+        -1600,
+        192
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "4c52105d-1251-4449-9c0d-21b2813c895e",
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b8e7a0e8-06be-4985-9e82-6011549859ab",
+      "name": "Route by Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -1376,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "subject": "={{ $json.details.subject }}",
+        "message": "={{ $json.details.body }}",
+        "options": {}
+      },
+      "id": "f1472052-e387-4594-b8b3-15e045f6ede1",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        -1152,
+        -176
+      ],
+      "webhookId": "bc87326e-c692-4c70-be94-7cc640517d2a"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "start": "={{ $json.details.date }}T{{ $json.details.time }}:00",
+        "end": "={{ $json.details.date }}T{{ new Date(new Date($json.details.date + 'T' + $json.details.time).getTime() + 3600000).toISOString().split('T')[1].substring(0,5) }}:00",
+        "additionalFields": {}
+      },
+      "id": "aaed6c09-6719-4dc6-a799-92b69b63ffc7",
+      "name": "Create Meeting",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        -1152,
+        -48
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d6b1e8ff-6427-49b9-8e23-536338a73db1",
+      "name": "Generate Invoice/Quote",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1152,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.html2pdf.app/v1/generate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "html2PdfApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"html\": \"{{ $json.htmlContent }}\",\n  \"format\": \"A4\",\n  \"printBackground\": true\n}",
+        "options": {}
+      },
+      "id": "083f696d-be79-4a16-9571-94a3859d4020",
+      "name": "Convert to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -928,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "c2e31793-f467-4ed7-b4ca-3646a8086fd9",
+      "name": "Add/Update Contact",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1152,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "your-folder-id",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "0af8d27e-945d-44e1-bc88-1f5e8acf5b3c",
+      "name": "Manage Documents",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1152,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.tavily.com/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "tavilyApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"{{ $json.details.query }}\",\n  \"search_depth\": \"advanced\",\n  \"max_results\": 5\n}",
+        "options": {}
+      },
+      "id": "907bc6ef-78c0-4dca-ac10-c7b936dd2223",
+      "name": "Web Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -1152,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.confirmationMessage }}",
+        "additionalFields": {}
+      },
+      "id": "cb1201fb-9080-4573-8afb-8dc2c707bbea",
+      "name": "Send Confirmation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        -704,
+        -176
+      ],
+      "webhookId": "c797358e-8363-47a8-99b2-8f05e63fa0bf"
+    },
+    {
+      "parameters": {},
+      "id": "0eb545ad-1eb6-4570-b733-a845309d8aa0",
+      "name": "Format Confirmation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail"
+      },
+      "id": "1e74436d-b14b-4233-b108-da65f4b55602",
+      "name": "Send Meeting Notification",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        -160
+      ],
+      "webhookId": "66a65f2b-113b-480b-9dd1-461193294957"
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail"
+      },
+      "id": "f73b53a9-a444-4624-a186-2168f417e1cb",
+      "name": "Send Invoice/Quote Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        208
+      ],
+      "webhookId": "6cdb32bf-e2ce-4c19-929b-26b8136afd38"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare AI Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare AI Input": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Route by Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Action": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Format Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Meeting": {
+      "main": [
+        [
+          {
+            "node": "Send Meeting Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Meeting Notification": {
+      "main": [
+        [
+          {
+            "node": "Format Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Invoice/Quote": {
+      "main": [
+        [
+          {
+            "node": "Convert to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to PDF": {
+      "main": [
+        [
+          {
+            "node": "Send Invoice/Quote Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Invoice/Quote Email": {
+      "main": [
+        [
+          {
+            "node": "Format Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add/Update Contact": {
+      "main": [
+        [
+          {
+            "node": "Format Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manage Documents": {
+      "main": [
+        [
+          {
+            "node": "Format Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Research": {
+      "main": [
+        [
+          {
+            "node": "Format Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}

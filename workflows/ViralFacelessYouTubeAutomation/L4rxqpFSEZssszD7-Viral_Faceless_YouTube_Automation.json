@@ -1,0 +1,379 @@
+{
+  "name": "Viral Faceless YouTube Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "8b3192d4-4ac1-4bca-88c0-96e8fb13aea4",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1488,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"={{ 'Create a viral YouTube video script about ' + $json.topic + '. Include: Hook (first 5 seconds), Main content (engaging facts), Call to action. Make it 60-90 seconds long, engaging and perfect for faceless video content.' }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "0aaa3d51-53fb-48ee-86f0-264eae0d83aa",
+      "name": "OpenAI Generate Script",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1072,
+        272
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "bkRA3W9ocQWZug4N",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.item.json.choices[0].message.content;\nreturn { json: { script: response, topic: $input.item.json.topic } };"
+      },
+      "id": "74175b25-2fa3-4bc9-8deb-cb11ba7497b2",
+      "name": "Parse Script Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/speech",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"tts-1\", \"input\": $json.script, \"voice\": \"onyx\"}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "9f382a7c-f474-4e25-9c12-5822539436f5",
+      "name": "OpenAI TTS Voiceover",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.pexels.com/videos/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{$json.topic}}"
+            },
+            {
+              "name": "per_page",
+              "value": "5"
+            },
+            {
+              "name": "orientation",
+              "value": "portrait"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "86dd3b9e-c127-402e-af7c-4c1921105490",
+      "name": "Pexels Get Stock Footage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "if (!$input.item.json.videos || $input.item.json.videos.length === 0) {\n  throw new Error('No videos found');\n}\n\nconst videoUrl = $input.item.json.videos[0].video_files[0].link;\n\nreturn {\n  json: {\n    videoUrl: videoUrl,\n    topic: $input.item.json.topic\n  }\n};"
+      },
+      "id": "27c51a2f-7abe-47b6-80de-0ccb167ced2c",
+      "name": "Extract Video URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/images/generations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"dall-e-3\", \"prompt\": \"Create a YouTube thumbnail for a video about \" + $json.topic + \". Style: Bold text, eye-catching colors, high contrast, professional design, viral aesthetic\", \"size\": \"1024x1024\", \"quality\": \"standard\"}",
+        "options": {}
+      },
+      "id": "c0d10a75-44e8-47c0-8799-0d1398598889",
+      "name": "DALLE Generate Thumbnail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        64
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "bkRA3W9ocQWZug4N",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const thumbnailUrl = $input.item.json.data[0].url;\nreturn { json: { thumbnailUrl: thumbnailUrl, topic: $input.item.json.topic } };"
+      },
+      "id": "671c1ae5-3216-4638-99fd-0cb827d59c7a",
+      "name": "Parse Thumbnail Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const script = $input.item.json.script || '';\nconst topic = $input.item.json.topic || 'Amazing Facts';\n\nconst title = topic + ' - You Won\\'t Believe This! 🤯';\n\nconst description = script.substring(0, 200) + '...\\n\\n🔔 Subscribe for more viral content!\\n\\n#' + topic.replace(/ /g, '') + ' #viral #trending #shorts';\n\nconst tags = topic + ',viral,trending,shorts,facts,amazing,youtube';\n\nreturn {\n  json: {\n    videoTitle: title,\n    description: description,\n    tags: tags,\n    script: script,\n    topic: topic\n  }\n};"
+      },
+      "id": "520badad-f9e3-4546-bed3-f3d286cd1b6f",
+      "name": "Generate Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "057453ff-504a-49c9-ab63-49043ee7311c",
+      "name": "Set Topic",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -1296,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "merge-data",
+              "name": "finalData",
+              "value": "={\"videoTitle\": $('Generate Metadata').item.json.videoTitle, \"description\": $('Generate Metadata').item.json.description, \"tags\": $('Generate Metadata').item.json.tags, \"thumbnailUrl\": $('Parse Thumbnail Response').item.json.thumbnailUrl, \"audioFile\": $('OpenAI TTS Voiceover').item.json, \"videoUrl\": $('Extract Video URL').item.json.videoUrl}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "47caba0e-0615-4d83-881f-dc9b2c040f79",
+      "name": "Merge All Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -192,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    message: 'Workflow complete! Video ready for upload.',\n    title: $input.item.json.finalData.videoTitle,\n    description: $input.item.json.finalData.description,\n    thumbnailUrl: $input.item.json.finalData.thumbnailUrl,\n    videoUrl: $input.item.json.finalData.videoUrl,\n    status: 'ready'\n  }\n};"
+      },
+      "id": "7016ad04-8dd8-4357-b316-3105e3c41652",
+      "name": "Final Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        272
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Topic": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Generate Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Generate Script": {
+      "main": [
+        [
+          {
+            "node": "Parse Script Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Script Response": {
+      "main": [
+        [
+          {
+            "node": "OpenAI TTS Voiceover",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pexels Get Stock Footage",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DALLE Generate Thumbnail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI TTS Voiceover": {
+      "main": [
+        [
+          {
+            "node": "Merge All Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pexels Get Stock Footage": {
+      "main": [
+        [
+          {
+            "node": "Extract Video URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Video URL": {
+      "main": [
+        [
+          {
+            "node": "Merge All Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DALLE Generate Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Parse Thumbnail Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Thumbnail Response": {
+      "main": [
+        [
+          {
+            "node": "Merge All Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Metadata": {
+      "main": [
+        [
+          {
+            "node": "Merge All Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Data": {
+      "main": [
+        [
+          {
+            "node": "Final Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}

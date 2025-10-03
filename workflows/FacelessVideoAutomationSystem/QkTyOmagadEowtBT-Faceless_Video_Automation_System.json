@@ -1,0 +1,651 @@
+{
+  "name": "Faceless Video Automation System",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "authentication": "oAuth2",
+        "baseId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "tableId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "additionalFields": {}
+      },
+      "id": "b4464200-b7b5-4d69-b9d6-8229b532c490",
+      "name": "Airtable Trigger",
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3584,
+        -144
+      ],
+      "webhookId": "auto-generate"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "requestOptions": {}
+      },
+      "id": "ec890cd1-15c0-495c-83be-817b7933092c",
+      "name": "Generate Script with GPT-4o",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [
+        -3360,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the GPT-4o JSON response\nconst response = items[0].json.message.content;\nconst scriptData = JSON.parse(response);\n\nconst videoId = items[0].json.id;\nconst originalPrompt = items[0].json.fields['Prompt'];\nconst videoTitle = scriptData.title || 'Untitled Video';\n\n// Extract scenes and prepare for next nodes\nconst scenes = scriptData.scenes || [];\n\nreturn scenes.map((scene, index) => ({\n  json: {\n    video_id: videoId,\n    video_title: videoTitle,\n    original_prompt: originalPrompt,\n    scene_number: scene.scene_number || (index + 1),\n    narration: scene.narration_text,\n    image_prompt: scene.image_prompt,\n    duration: scene.duration_seconds || 6,\n    total_scenes: scenes.length\n  }\n}));"
+      },
+      "id": "0df3241d-98ed-4647-be0b-3d4faae36842",
+      "name": "Parse Script JSON",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3136,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": "Scenes"
+      },
+      "id": "34b047e3-8397-428e-8fe3-09ea49b3d31c",
+      "name": "Save Scenes to Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -2880,
+        -384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cloud.leonardo.ai/api/rest/v1/generations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"height\": 576,\n  \"width\": 1024,\n  \"modelId\": \"6bef9f1b-29cb-40c7-b9df-32b51c1f67d3\",\n  \"prompt\": \"{{ $json.image_prompt }}, cinematic lighting, highly detailed, 4k quality, professional photography\",\n  \"num_images\": 1,\n  \"promptMagic\": true,\n  \"photoReal\": false,\n  \"alchemy\": true\n}",
+        "options": {}
+      },
+      "id": "27d2621b-3bbc-49a3-9d5c-dad12033a7f6",
+      "name": "Generate Image - Leonardo AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2912,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 15
+      },
+      "id": "4c96d9d7-d79c-4a04-9ec9-5a550c88a985",
+      "name": "Wait for Image Generation",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2704,
+        -144
+      ],
+      "webhookId": "auto-generate"
+    },
+    {
+      "parameters": {
+        "url": "=https://cloud.leonardo.ai/api/rest/v1/generations/{{ $json.sdGenerationJob.generationId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8c391688-961f-4677-96f8-4a91e648e189",
+      "name": "Fetch Generated Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2480,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract image URL from Leonardo response\nconst generationData = items[0].json.generations_by_pk;\nconst imageUrl = generationData?.generated_images?.[0]?.url || '';\n\n// Pass through all the scene data plus image URL\nreturn [{\n  json: {\n    ...items[0].json,\n    image_url: imageUrl,\n    image_id: generationData?.generated_images?.[0]?.id || ''\n  }\n}];"
+      },
+      "id": "b249e0ac-5717-4940-b7a7-af939bc2729d",
+      "name": "Extract Image URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2256,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.elevenlabs.io/v1/text-to-speech/{{ $json.voice_id || '21m00Tcm4TlvDq8ikWAM' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.narration }}\",\n  \"model_id\": \"eleven_turbo_v2\",\n  \"voice_settings\": {\n    \"stability\": 0.5,\n    \"similarity_boost\": 0.75,\n    \"style\": 0.5,\n    \"use_speaker_boost\": true\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "0ffaf5a6-11dc-463b-ba11-cfc4c0e447c6",
+      "name": "Generate Voiceover - ElevenLabs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2928,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "name": "=audio_scene_{{ $json.scene_number }}_{{ $json.video_id }}.mp3",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "list",
+          "cachedResultName": "Faceless Videos"
+        },
+        "options": {}
+      },
+      "id": "84d6531f-7d54-4c96-8485-2538a2faa697",
+      "name": "Upload Audio to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2704,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.image_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "61eecd77-7dc9-47c4-9589-4dec0ee0b159",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2032,
+        -144
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "name": "=image_scene_{{ $json.scene_number }}_{{ $json.video_id }}.jpg",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "list",
+          "cachedResultName": "Faceless Videos"
+        },
+        "options": {}
+      },
+      "id": "e4a05f6e-3c3b-43ac-9b1f-14012cadd53c",
+      "name": "Upload Image to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1824,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "options": {}
+      },
+      "id": "35786b37-b1f8-47b0-ab7a-322167e8a620",
+      "name": "Merge Image + Audio Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2448,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all scenes for video compilation\nconst allScenes = items.map(item => ({\n  scene_number: item.json.scene_number,\n  image_url: item.json.image_url || item.json.webContentLink,\n  audio_url: item.json.audio_url || item.json.webContentLink,\n  duration: item.json.duration,\n  narration: item.json.narration\n}));\n\n// Sort by scene number\nallScenes.sort((a, b) => a.scene_number - b.scene_number);\n\n// Get video metadata\nconst firstItem = items[0].json;\n\nreturn [{\n  json: {\n    video_id: firstItem.video_id,\n    video_title: firstItem.video_title,\n    total_scenes: allScenes.length,\n    scenes: allScenes,\n    original_prompt: firstItem.original_prompt\n  }\n}];"
+      },
+      "id": "7adf0a5e-0787-430a-8cb8-cbae948a892a",
+      "name": "Aggregate All Scenes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2256,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build Shotstack timeline JSON\nconst sceneData = items[0].json.scenes;\n\nconst clips = [];\nlet currentTime = 0;\n\nsceneData.forEach((scene, index) => {\n  // Add image clip\n  clips.push({\n    asset: {\n      type: 'image',\n      src: scene.image_url\n    },\n    start: currentTime,\n    length: scene.duration,\n    fit: 'cover',\n    scale: 1,\n    position: 'center',\n    transition: {\n      in: 'fade',\n      out: 'fade'\n    }\n  });\n  \n  // Add audio clip\n  clips.push({\n    asset: {\n      type: 'audio',\n      src: scene.audio_url\n    },\n    start: currentTime,\n    length: scene.duration\n  });\n  \n  currentTime += scene.duration;\n});\n\nconst timeline = {\n  soundtrack: {\n    src: 'https://s3-ap-southeast-2.amazonaws.com/shotstack-assets/music/moment.mp3',\n    effect: 'fadeInFadeOut',\n    volume: 0.1\n  },\n  background: '#000000',\n  tracks: [\n    {\n      clips: clips\n    }\n  ]\n};\n\nreturn [{\n  json: {\n    ...items[0].json,\n    timeline: timeline,\n    output_format: 'mp4',\n    resolution: 'hd'\n  }\n}];"
+      },
+      "id": "486814d9-8a4b-4e6a-9e43-5a27d8ed0bdc",
+      "name": "Build Shotstack Timeline",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2032,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.shotstack.io/v1/render",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"timeline\": {{ $json.timeline }},\n  \"output\": {\n    \"format\": \"mp4\",\n    \"resolution\": \"hd\",\n    \"fps\": 30,\n    \"scaleTo\": \"preview\"\n  }\n}",
+        "options": {}
+      },
+      "id": "c5566859-0848-4b4d-afb5-03b3ac7f442a",
+      "name": "Render Video - Shotstack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1760,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "2f8db4fa-a859-44c8-9631-e4b20d7042fb",
+      "name": "Wait for Video Render",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1552,
+        -112
+      ],
+      "webhookId": "auto-generate"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.shotstack.io/v1/render/{{ $json.response.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6fcaa2a4-bf44-4083-b99c-a83bef4b5d6b",
+      "name": "Check Render Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1328,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "table": "Video Prompts",
+        "options": {}
+      },
+      "id": "3f11a467-6596-4b5a-9e5b-0a807d857b93",
+      "name": "Update Airtable with Video",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2,
+      "position": [
+        -1328,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.response.status }}",
+              "operation": "equals",
+              "value2": "done"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "201f9e7e-2582-41a7-a0fb-e27dcd671d9b",
+      "name": "Check if Render Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        96
+      ]
+    }
+  ],
+  "connections": {
+    "Airtable Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Script with GPT-4o",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Script with GPT-4o": {
+      "main": [
+        [
+          {
+            "node": "Parse Script JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Script JSON": {
+      "main": [
+        [
+          {
+            "node": "Save Scenes to Airtable",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Image - Leonardo AI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Voiceover - ElevenLabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image - Leonardo AI": {
+      "main": [
+        [
+          {
+            "node": "Wait for Image Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Image Generation": {
+      "main": [
+        [
+          {
+            "node": "Fetch Generated Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Generated Image": {
+      "main": [
+        [
+          {
+            "node": "Extract Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image URL": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Upload Image to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Image to Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge Image + Audio Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Voiceover - ElevenLabs": {
+      "main": [
+        [
+          {
+            "node": "Upload Audio to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Audio to Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge Image + Audio Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Image + Audio Data": {
+      "main": [
+        [
+          {
+            "node": "Aggregate All Scenes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate All Scenes": {
+      "main": [
+        [
+          {
+            "node": "Build Shotstack Timeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Shotstack Timeline": {
+      "main": [
+        [
+          {
+            "node": "Render Video - Shotstack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Render Video - Shotstack": {
+      "main": [
+        [
+          {
+            "node": "Wait for Video Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Video Render": {
+      "main": [
+        [
+          {
+            "node": "Check Render Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Render Status": {
+      "main": [
+        [
+          {
+            "node": "Check if Render Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Render Complete": {
+      "main": [
+        [
+          {
+            "node": "Update Airtable with Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Video Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

@@ -1,0 +1,929 @@
+# Workflow: Mortgage Brokerage - Lead Response System
+
+## Overview
+
+This document provides an overview of the 'Mortgage Brokerage - Lead Response System' workflow.
+
+## Workflow Steps (Nodes)
+
+| Step Name | Type |
+|-----------|------|
+| Webhook - Lead Capture | n8n-nodes-base.webhook |
+| Lead Score Filter | n8n-nodes-base.if |
+| SMS - Immediate Response | n8n-nodes-base.twilio |
+| Email - Immediate Response | n8n-nodes-base.sendGrid |
+| Wait 2 Minutes | n8n-nodes-base.wait |
+| AI Voice Call (Vapi) | n8n-nodes-base.httpRequest |
+| CRM - Create Contact | n8n-nodes-base.hubspot |
+| CRM - Create Urgent Task | n8n-nodes-base.hubspot |
+| Wait 2 Hours | n8n-nodes-base.wait |
+| Check If Contacted | n8n-nodes-base.if |
+| SMS - 2 Hour Follow-up | n8n-nodes-base.twilio |
+| Wait 1 Day | n8n-nodes-base.wait |
+| Check If Contacted (Day 1) | n8n-nodes-base.if |
+| Email - Day 1 Nurture | n8n-nodes-base.sendGrid |
+| Wait 2 Days | n8n-nodes-base.wait |
+| Check If Contacted (Day 3) | n8n-nodes-base.if |
+| CRM - Day 3 Call Task | n8n-nodes-base.hubspot |
+| Wait 4 Days (Total: 7) | n8n-nodes-base.wait |
+| Check If Contacted (Day 7) | n8n-nodes-base.if |
+| CRM - Move to Long-term Nurture | n8n-nodes-base.hubspot |
+| SMS - Final Message | n8n-nodes-base.twilio |
+| Low Score Lead (<60) | n8n-nodes-base.if |
+| CRM - Low Score to Newsletter | n8n-nodes-base.hubspot |
+| Email - Newsletter Welcome | n8n-nodes-base.sendGrid |
+| Webhook Response | n8n-nodes-base.respondToWebhook |
+| Webhook - Appointment Booked | n8n-nodes-base.webhook |
+| CRM - Update with Appointment | n8n-nodes-base.hubspot |
+| SMS - Appointment Confirmation | n8n-nodes-base.twilio |
+| Email - Appointment Confirmation | n8n-nodes-base.sendGrid |
+| Wait Until 24 Hours Before | n8n-nodes-base.wait |
+| Email - 24 Hour Reminder | n8n-nodes-base.sendGrid |
+| Wait Until 2 Hours Before | n8n-nodes-base.wait |
+| SMS - 2 Hour Reminder | n8n-nodes-base.twilio |
+| Wait Until 30 Minutes Before | n8n-nodes-base.wait |
+| SMS - 30 Minute Reminder | n8n-nodes-base.twilio |
+| Webhook Response - Appointment | n8n-nodes-base.respondToWebhook |
+
+## Raw JSON
+
+```json
+{
+  "name": "Mortgage Brokerage - Lead Response System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-capture",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "147728c9-d7d7-44b6-a907-2b1bd43b1b84",
+      "name": "Webhook - Lead Capture",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        -752
+      ],
+      "webhookId": "lead-capture-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.lead_score }}",
+              "operation": "larger",
+              "value2": 70
+            }
+          ]
+        }
+      },
+      "id": "c0d67bc9-331e-45c7-bdf2-ca6db108e330",
+      "name": "Lead Score Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        -752
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "options": {}
+      },
+      "id": "c470c441-ffd4-49e6-9e97-5e0dc72055ab",
+      "name": "SMS - Immediate Response",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -848
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail"
+      },
+      "id": "6590c281-e0cc-4cb6-9146-3d70b8915dba",
+      "name": "Email - Immediate Response",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -736
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "id": "00d24c61-4b87-40cd-a7a2-2147536d6fa0",
+      "name": "Wait 2 Minutes",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -608
+      ],
+      "webhookId": "c807008a-5174-4166-9c34-1972ef73099d"
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.VAPI_API_URL }}/call",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "vapiApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phoneNumber",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "assistantId",
+              "value": "={{ $env.VAPI_ASSISTANT_ID }}"
+            },
+            {
+              "name": "customer",
+              "value": "={{ { \"name\": $json.name, \"email\": $json.email, \"leadScore\": $json.lead_score, \"mortgageType\": $json.mortgage_type } }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "58fecdbe-060b-4785-a5fd-a773965c934f",
+      "name": "AI Voice Call (Vapi)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -160,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "create"
+      },
+      "id": "a7f4596e-0d59-431e-8707-2f65509331fd",
+      "name": "CRM - Create Contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -848
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "task"
+      },
+      "id": "05e0375a-07c3-4828-b9db-2868f5315291",
+      "name": "CRM - Create Urgent Task",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -736
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "id": "79706a8d-5f8d-4d92-a649-c196afd9ff0a",
+      "name": "Wait 2 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -608
+      ],
+      "webhookId": "571b6788-c87c-4a3f-b6c9-c6687e7cd1ed"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.contacted }}"
+            }
+          ]
+        }
+      },
+      "id": "6189f115-fb8c-43aa-987b-eb064feb8a3b",
+      "name": "Check If Contacted",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -608
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "options": {}
+      },
+      "id": "e8420808-9e21-43e8-af61-cd529a4f0ddd",
+      "name": "SMS - 2 Hour Follow-up",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        512,
+        -704
+      ]
+    },
+    {
+      "parameters": {
+        "unit": "days"
+      },
+      "id": "e6105580-ec60-401a-986f-40fc15a8181c",
+      "name": "Wait 1 Day",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        512,
+        -592
+      ],
+      "webhookId": "4d288e46-b36d-433c-9104-9dea4f42f243"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.contacted }}"
+            }
+          ]
+        }
+      },
+      "id": "e483132a-26e4-462f-b26d-7d18acba873b",
+      "name": "Check If Contacted (Day 1)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -592
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail"
+      },
+      "id": "a31d0e21-a929-4c87-ae32-977456d1fad4",
+      "name": "Email - Day 1 Nurture",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        944,
+        -672
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "days"
+      },
+      "id": "224f4bb6-0154-4ced-b680-60c7dc96a05b",
+      "name": "Wait 2 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        944,
+        -544
+      ],
+      "webhookId": "caf80538-21ed-4795-b7d6-44406f4eebf9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.contacted }}"
+            }
+          ]
+        }
+      },
+      "id": "cf037ad6-089d-485f-ae45-239f44a7494b",
+      "name": "Check If Contacted (Day 3)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        -544
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "task"
+      },
+      "id": "b0a1b4ac-54a6-47a7-92c2-56e0c3ad956f",
+      "name": "CRM - Day 3 Call Task",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        -624
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "days"
+      },
+      "id": "1c33c2e4-d6a4-4ffa-8040-fc105bc10ce7",
+      "name": "Wait 4 Days (Total: 7)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        -512
+      ],
+      "webhookId": "e5e1977d-64b4-463b-ab3c-07783de647e7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.contacted }}"
+            }
+          ]
+        }
+      },
+      "id": "c28e73f7-46cd-4ae5-9554-68716341a867",
+      "name": "Check If Contacted (Day 7)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "update"
+      },
+      "id": "e58f96d5-ca46-48f0-aed0-15ffb4714e2a",
+      "name": "CRM - Move to Long-term Nurture",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        -592
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "options": {}
+      },
+      "id": "c7ca45b8-53e1-4a0a-885f-0124abb9bdb0",
+      "name": "SMS - Final Message",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        -464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.lead_score }}",
+              "value2": 60
+            }
+          ]
+        }
+      },
+      "id": "174e6804-9e44-4caa-b9f0-c7e47f9c05b6",
+      "name": "Low Score Lead (<60)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -448
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "update"
+      },
+      "id": "3ad66f02-6a01-4e15-90c8-5960bcc49f96",
+      "name": "CRM - Low Score to Newsletter",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -448
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail"
+      },
+      "id": "15c6b69f-a8f1-4110-9545-35f3b7421d57",
+      "name": "Email - Newsletter Welcome",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        -336
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Lead received and processing started\", \"lead_id\": $json.id } }}",
+        "options": {}
+      },
+      "id": "0d0aa034-e8ad-449a-8aa5-fd2d79228298",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -848
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-booked",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d725fdf0-4941-46f7-8b26-4359f1b5bc8b",
+      "name": "Webhook - Appointment Booked",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        0
+      ],
+      "webhookId": "appointment-booked-webhook"
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "update"
+      },
+      "id": "19298427-b688-4b5c-a9af-4d4a2c00dd32",
+      "name": "CRM - Update with Appointment",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "options": {}
+      },
+      "id": "24fcfca4-739d-48f4-984b-e4254c70741b",
+      "name": "SMS - Appointment Confirmation",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail"
+      },
+      "id": "bc78303b-3514-4b7c-8d17-171ca63bae82",
+      "name": "Email - Appointment Confirmation",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        112
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9bead4ed-8d88-4498-95cf-2f6bdea8e52f",
+      "name": "Wait Until 24 Hours Before",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        0
+      ],
+      "webhookId": "9197fde3-4a6b-4ae1-b33c-8a54e0ab2f73"
+    },
+    {
+      "parameters": {
+        "operation": "sendEmail"
+      },
+      "id": "ad68ef29-10ed-497d-93c1-6ca3e16f8e5b",
+      "name": "Email - 24 Hour Reminder",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        96,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1a7b838d-17b8-4328-aa7b-76e433f85a2f",
+      "name": "Wait Until 2 Hours Before",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        96,
+        112
+      ],
+      "webhookId": "0cb701bb-865a-4a64-b274-688e8a665d17"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "options": {}
+      },
+      "id": "5f12695b-a655-4962-ba78-cebc9287761c",
+      "name": "SMS - 2 Hour Reminder",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        320,
+        112
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "adf5277b-a84d-47a4-9a41-611ba003d4b9",
+      "name": "Wait Until 30 Minutes Before",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        496,
+        112
+      ],
+      "webhookId": "a57d44f9-0275-472c-ad3e-aa1472743ed0"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "options": {}
+      },
+      "id": "d8f7dbb3-695f-4514-97ea-92f8b1bd48da",
+      "name": "SMS - 30 Minute Reminder",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        784,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Appointment confirmation sequence started\" } }}",
+        "options": {}
+      },
+      "id": "1785c7fe-86d6-4ed4-8fd0-3ee9431161a8",
+      "name": "Webhook Response - Appointment",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        112
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Lead Capture": {
+      "main": [
+        [
+          {
+            "node": "Lead Score Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Score Filter": {
+      "main": [
+        [
+          {
+            "node": "SMS - Immediate Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Immediate Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait 2 Minutes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CRM - Create Contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CRM - Create Urgent Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Low Score Lead (<60)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2 Minutes": {
+      "main": [
+        [
+          {
+            "node": "AI Voice Call (Vapi)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Voice Call (Vapi)": {
+      "main": [
+        [
+          {
+            "node": "Wait 2 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM - Create Contact": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "Check If Contacted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Contacted": {
+      "main": [
+        [
+          {
+            "node": "SMS - 2 Hour Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS - 2 Hour Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Wait 1 Day",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1 Day": {
+      "main": [
+        [
+          {
+            "node": "Check If Contacted (Day 1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Contacted (Day 1)": {
+      "main": [
+        [
+          {
+            "node": "Email - Day 1 Nurture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email - Day 1 Nurture": {
+      "main": [
+        [
+          {
+            "node": "Wait 2 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2 Days": {
+      "main": [
+        [
+          {
+            "node": "Check If Contacted (Day 3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Contacted (Day 3)": {
+      "main": [
+        [
+          {
+            "node": "CRM - Day 3 Call Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM - Day 3 Call Task": {
+      "main": [
+        [
+          {
+            "node": "Wait 4 Days (Total: 7)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 4 Days (Total: 7)": {
+      "main": [
+        [
+          {
+            "node": "Check If Contacted (Day 7)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Contacted (Day 7)": {
+      "main": [
+        [
+          {
+            "node": "CRM - Move to Long-term Nurture",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SMS - Final Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Low Score Lead (<60)": {
+      "main": [
+        [
+          {
+            "node": "CRM - Low Score to Newsletter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Newsletter Welcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Appointment Booked": {
+      "main": [
+        [
+          {
+            "node": "CRM - Update with Appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM - Update with Appointment": {
+      "main": [
+        [
+          {
+            "node": "SMS - Appointment Confirmation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email - Appointment Confirmation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait Until 24 Hours Before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 24 Hours Before": {
+      "main": [
+        [
+          {
+            "node": "Email - 24 Hour Reminder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook Response - Appointment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wait Until 2 Hours Before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 2 Hours Before": {
+      "main": [
+        [
+          {
+            "node": "SMS - 2 Hour Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SMS - 2 Hour Reminder": {
+      "main": [
+        [
+          {
+            "node": "Wait Until 30 Minutes Before",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Until 30 Minutes Before": {
+      "main": [
+        [
+          {
+            "node": "SMS - 30 Minute Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}
+```

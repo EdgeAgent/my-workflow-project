@@ -1,0 +1,1010 @@
+{
+  "name": "Advanced Multi-Channel Customer Engagement Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "customer-intake",
+        "options": {}
+      },
+      "id": "4306673e-0db4-4fb7-b854-3204ba6142b2",
+      "name": "Webhook - Customer Form Submit",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        64
+      ],
+      "webhookId": "customer-intake"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "f89f91f9-2b13-4f00-baa2-a5ac142045a2",
+      "name": "Schedule - Daily Reports",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "741651a7-3b89-4db7-bf71-f970e391d43d",
+      "name": "Google Sheets - Read Customer Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        -800,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.customer_type}}",
+              "operation": "equals",
+              "value2": "premium"
+            }
+          ],
+          "number": [
+            {
+              "value1": "={{$json.lifetime_value}}",
+              "operation": "larger",
+              "value2": 5000
+            }
+          ]
+        }
+      },
+      "id": "f8230c25-b40c-432a-a1eb-381acc929cc5",
+      "name": "IF - Premium Customer Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT u.*, o.total_orders, o.total_spent FROM users u LEFT JOIN (SELECT user_id, COUNT(*) as total_orders, SUM(amount) as total_spent FROM orders GROUP BY user_id) o ON u.id = o.user_id WHERE u.email = '{{$json.email}}'",
+        "options": {}
+      },
+      "id": "9d0c8bed-5675-42e6-8a1c-0759da33816a",
+      "name": "PostgreSQL - Fetch User History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.clearbit.com/v2/companies/find",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "1dbd857c-bf26-43f5-8c7a-450e8945f74e",
+      "name": "HTTP Request - Clearbit Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -368,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create"
+      },
+      "id": "83ac7e00-7d45-4c25-9e6c-e5a1dd34dd7b",
+      "name": "HubSpot - Create/Update Contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -80
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "94ea6c0c-2375-4950-8d98-7a894202e1d4",
+      "name": "SendGrid - Premium Welcome Email",
+      "type": "n8n-nodes-base.sendgrid",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        -368
+      ]
+    },
+    {
+      "parameters": {
+        "text": "🌟 New Premium Customer Alert!\n\nName: {{$json.first_name}} {{$json.last_name}}\nEmail: {{$json.email}}\nLTV: ${{$json.lifetime_value}}\nCompany: {{$json.company_name}}",
+        "otherOptions": {}
+      },
+      "id": "cfc6d511-60d2-4488-a57f-1cc22c1dd01f",
+      "name": "Slack - Notify Sales Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -128
+      ],
+      "webhookId": "d2808555-ee38-4e1a-9584-8345398ca8ad"
+    },
+    {
+      "parameters": {
+        "workspace": "{{$env.ASANA_WORKSPACE_ID}}",
+        "name": "Follow up with {{$json.first_name}} {{$json.last_name}}",
+        "otherProperties": {}
+      },
+      "id": "b779730f-f26e-4dca-ab31-3e30c8a73290",
+      "name": "Asana - Create Follow-up Task",
+      "type": "n8n-nodes-base.asana",
+      "typeVersion": 1,
+      "position": [
+        80,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.customer_type}}",
+              "operation": "equals",
+              "value2": "standard"
+            }
+          ]
+        }
+      },
+      "id": "9a50a9af-a0ef-4f5a-9462-8b0758423258",
+      "name": "IF - Standard Customer Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        256
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "25ab2570-106e-4243-b51d-35ae084ec24d",
+      "name": "SendGrid - Standard Welcome Email",
+      "type": "n8n-nodes-base.sendgrid",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "id": "b0277b76-bab3-46d4-ac1d-a3070edd65d1",
+      "name": "Google Sheets - Log Standard Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        -144,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const customerData = items[0].json;\nconst enrichmentData = items[1].json;\n\nconst merged = {\n\t...customerData,\n\tcompany_name: enrichmentData.name || 'Unknown',\n\tcompany_size: enrichmentData.metrics?.employees || 0,\n\tcompany_industry: enrichmentData.category?.industry || 'Unknown',\n\tcompany_location: enrichmentData.geo?.city || 'Unknown',\n\tenriched_at: new Date().toISOString(),\n\tenrichment_score: Math.floor(Math.random() * 100)\n};\n\nreturn [{ json: merged }];"
+      },
+      "id": "77513bee-f959-4523-9a3f-3c3d783df90f",
+      "name": "Function - Merge Customer Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst enrichedItems = items.map(item => {\n\tconst data = item.json;\n\t\n\t// Calculate customer score\n\tlet score = 0;\n\tif (data.total_orders > 10) score += 30;\n\tif (data.total_spent > 1000) score += 40;\n\tif (data.company_size > 50) score += 20;\n\tif (data.engagement_rate > 0.7) score += 10;\n\t\n\t// Determine segment\n\tlet segment = 'low';\n\tif (score > 70) segment = 'high';\n\telse if (score > 40) segment = 'medium';\n\t\n\treturn {\n\t\tjson: {\n\t\t\t...data,\n\t\t\tcustomer_score: score,\n\t\t\tcustomer_segment: segment,\n\t\t\tprocessed_at: new Date().toISOString()\n\t\t}\n\t};\n});\n\nreturn enrichedItems;"
+      },
+      "id": "710651d6-9bad-4dbd-a6ee-317b4b43400f",
+      "name": "Code - Calculate Customer Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "database",
+        "operation": "search",
+        "options": {}
+      },
+      "id": "30a5a6c4-e6c2-4146-b9c0-7a319c50c30d",
+      "name": "Notion - Check Existing Record",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.results.length}}",
+              "operation": "equal"
+            }
+          ]
+        }
+      },
+      "id": "766ee969-0d6f-4dd8-af5a-625f20fc95ed",
+      "name": "IF - New Customer in Notion",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "pageId": "{{$env.NOTION_DATABASE_ID}}",
+        "simple": false,
+        "options": {}
+      },
+      "id": "c83078b6-8bb5-4fa8-80aa-00e0bd0e9de6",
+      "name": "Notion - Create Customer Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        96,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "event"
+      },
+      "id": "12f0c8d3-1139-4f9f-8abe-59e8640edcd7",
+      "name": "Segment - Track Event",
+      "type": "n8n-nodes-base.segment",
+      "typeVersion": 1,
+      "position": [
+        304,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.stripe.com/v1/customers",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "88605261-a2be-4e15-826c-f50ddd745768",
+      "name": "HTTP Request - Create Stripe Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        304,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "list": "={{$env.MAILCHIMP_LIST_ID}}",
+        "email": "={{$json.email}}",
+        "options": {}
+      },
+      "id": "a9c13bc2-c1f0-43ec-afef-b5e4ea896a9f",
+      "name": "Mailchimp - Add to List",
+      "type": "n8n-nodes-base.mailchimp",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a0c8a07-9223-4d0f-80e0-786c220ce408",
+      "name": "Merge - Combine Data Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "0dff6128-ae7f-4e8f-ba05-91d19b6765fd",
+      "name": "Split in Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -592,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "3876fd4d-1766-477d-939c-229bd4a81c92",
+      "name": "Wait - Rate Limiting",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        560
+      ],
+      "webhookId": "d4b76b6a-1125-428d-8276-3c8152f4e1b8"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C12345678",
+          "mode": "id"
+        },
+        "text": "Processing batch {{$json.batchNumber}} of {{$json.totalBatches}}",
+        "otherOptions": {}
+      },
+      "id": "57b6a8ba-bd22-4730-b73c-fe741b8fa8a3",
+      "name": "Slack - Progress Updates",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        720
+      ],
+      "webhookId": "157ff162-c80a-4681-8707-7dcdd401ad55"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.email}}",
+              "operation": "regex",
+              "value2": "^[a-zA-Z0-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+            }
+          ],
+          "boolean": [
+            {
+              "value1": "={{$json.gdpr_consent}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "bae042fa-2034-42c1-ba32-687d115e6df6",
+      "name": "IF - Validate Data Quality",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "099d7bc0-2b0c-41c9-b1d5-cc2d92952e21",
+      "name": "Aggregate - Calculate Totals",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        80,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "lifetime_value",
+              "order": "descending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "36df2491-d506-4ee4-81f7-6b3c38eefa92",
+      "name": "Sort - By Lifetime Value",
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "tags",
+        "options": {}
+      },
+      "id": "d5318a73-8bbd-46f1-bb5b-60907961f57f",
+      "name": "Item Lists - Split Tags",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [
+        80,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.intercom.io/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "role",
+              "value": "user"
+            },
+            {
+              "name": "email",
+              "value": "={{$json.email}}"
+            },
+            {
+              "name": "name",
+              "value": "={{$json.first_name}} {{$json.last_name}}"
+            },
+            {
+              "name": "custom_attributes",
+              "value": "={\"customer_type\": \"{{$json.customer_type}}\", \"ltv\": {{$json.lifetime_value}}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8a597e9c-567f-4ae9-80cd-70cb3411a0a2",
+      "name": "HTTP Request - Create Intercom Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        304,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "start": "={{DateTime.now().plus({days: 7}).toISO()}}",
+        "end": "={{DateTime.now().plus({days: 7, hours: 1}).toISO()}}",
+        "additionalFields": {
+          "attendees": "={{$json.email}},{{$json.account_manager_email}}",
+          "sendUpdates": "all"
+        }
+      },
+      "id": "29b3ecbc-e3d6-4128-86d9-c638a3ae5f65",
+      "name": "Google Calendar - Schedule Onboarding",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        528,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile"
+      },
+      "id": "91736e84-7b89-4f85-89ae-84ea8f8d8773",
+      "name": "Google Drive - Backup Customer Data",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        528,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{$env.DOWNSTREAM_WORKFLOW_ID}}",
+        "options": {}
+      },
+      "id": "a7222d98-a4d0-4778-8aa9-b39d7b5319f2",
+      "name": "Execute Workflow - Trigger Follow-up",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        528,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Premium Customer Path\nHandles high-value customers with:\n- CRM integration\n- Personal outreach\n- Calendar scheduling\n- Priority support setup",
+        "height": 464,
+        "width": 310
+      },
+      "id": "a29840d0-2d60-4a9d-ae3b-fa99ca4d664c",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Data Enrichment Layer\nEnhances customer data with:\n- Company information\n- Database history\n- Scoring algorithms\n- Segmentation logic",
+        "height": 328,
+        "width": 274
+      },
+      "id": "efeaa50a-16cb-469d-b58f-16e218771407",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.customer_segment}}",
+              "operation": "equals",
+              "value2": "high"
+            }
+          ]
+        }
+      },
+      "id": "8d3887f4-95c9-4cf1-8a5f-75e7b362c3ba",
+      "name": "IF - High Value Segment (Video Trigger)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        304,
+        256
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "76d2e1ca-e055-4d49-936a-8d324c2f7c61",
+      "name": "HeyGen - Generate Premium Video",
+      "type": "n8n-nodes-community.heygen",
+      "typeVersion": 1,
+      "position": [
+        528,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "6a3530f8-c19b-442f-8d9a-d94210d5c565",
+      "name": "Wait - For Video Generation",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        736,
+        256
+      ],
+      "webhookId": "8afa34e8-5d37-4350-b0d3-d06a94fcfbf0"
+    },
+    {
+      "parameters": {},
+      "id": "6eab51ee-9e0f-4766-a06d-ca4f771a755f",
+      "name": "TikTok - Post Welcome Video",
+      "type": "n8n-nodes-community.tiktok",
+      "typeVersion": 1,
+      "position": [
+        960,
+        256
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Customer Form Submit": {
+      "main": [
+        [
+          {
+            "node": "IF - Premium Customer Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule - Daily Reports": {
+      "main": [
+        [
+          {
+            "node": "IF - Standard Customer Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Read Customer Data": {
+      "main": [
+        [
+          {
+            "node": "Split in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Premium Customer Check": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Fetch User History",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request - Clearbit Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Standard Customer Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Fetch User History": {
+      "main": [
+        [
+          {
+            "node": "HubSpot - Create/Update Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Clearbit Enrichment": {
+      "main": [
+        [
+          {
+            "node": "Function - Merge Customer Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot - Create/Update Contact": {
+      "main": [
+        [
+          {
+            "node": "Slack - Notify Sales Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Asana - Create Follow-up Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Notify Sales Team": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Create Stripe Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Asana - Create Follow-up Task": {
+      "main": [
+        [
+          {
+            "node": "Segment - Track Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function - Merge Customer Data": {
+      "main": [
+        [
+          {
+            "node": "Code - Calculate Customer Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Calculate Customer Score": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Create Intercom Contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF - High Value Segment (Video Trigger)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notion - Check Existing Record": {
+      "main": [
+        [
+          {
+            "node": "IF - New Customer in Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - New Customer in Notion": {
+      "main": [
+        [
+          {
+            "node": "Notion - Create Customer Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Create Stripe Customer": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Schedule Onboarding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mailchimp - Add to List": {
+      "main": [
+        [
+          {
+            "node": "Notion - Check Existing Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segment - Track Event": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - Backup Customer Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split in Batches": {
+      "main": [
+        [
+          {
+            "node": "Wait - Rate Limiting",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF - Validate Data Quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - Rate Limiting": {
+      "main": [
+        [
+          {
+            "node": "Merge - Combine Data Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Progress Updates": {
+      "main": [
+        [
+          {
+            "node": "Split in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Validate Data Quality": {
+      "main": [
+        [
+          {
+            "node": "Slack - Progress Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Combine Data Sources": {
+      "main": [
+        [
+          {
+            "node": "Aggregate - Calculate Totals",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sort - By Lifetime Value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate - Calculate Totals": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Log Standard Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort - By Lifetime Value": {
+      "main": [
+        [
+          {
+            "node": "Item Lists - Split Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Lists - Split Tags": {
+      "main": [
+        [
+          {
+            "node": "Notion - Check Existing Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Create Intercom Contact": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow - Trigger Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Schedule Onboarding": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow - Trigger Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive - Backup Customer Data": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow - Trigger Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}

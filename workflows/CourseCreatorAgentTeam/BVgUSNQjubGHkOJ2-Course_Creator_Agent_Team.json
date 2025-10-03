@@ -1,0 +1,2652 @@
+{
+  "name": "Course Creator Agent Team",
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "=116486546",
+        "text": "=Welcome back, {{ $json.callback_query.data }}! \n\nNow I am going to get my assistant to help you come up with some course ideas right away, it's sure gonna be fire! ",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1472,
+        288
+      ],
+      "id": "183dba4d-45c1-43d5-9285-6ec1051476d7",
+      "name": "Start Course Ideation",
+      "webhookId": "03c3668f-cf3f-4401-91c0-4fd39a6415ee"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here's the information about the user: \n\nName: {{ $json.User }}\nExpertise: {{ $json.Expertise }}\nExperience: {{ $json.Experience }}\nPassion: {{ $json.Passion }}\nAudience: {{ $json.Audience }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Role\nYou are an expert Course Idea Creator agent. Your job is to generate a compelling and highly relevant new course idea tailored to the specific user, based on their personal background, skills, and interests.\n\n# Input (User Context)\nYou will receive the following user-specific information:\n- Name\n- Expertise\n- Experience\n- Passion\n- Audience\n\n# Task\nStart off by using the searchCourse tool to make retrieve the Courses created for user: {{ $json.User }}. \n\nMake sure the courses you create is new.\n\nBased on the above, your task is to create a course concept that best fits the user's background and will deeply resonate with their target audience.\n\nEach course must include the following:\n\n1. **Course Title**  \n   A catchy and clear title that reflects the transformation or solution offered.\n\n2. **Target Audience**  \n   A description of the specific type of person this course is designed for.\n\n3. **Pain Point**  \n   The main frustration, problem, or desire the target audience has — this course should solve it.\n\n4. **Transformation**  \n   The before/after outcome — what will the student be able to do after completing the course?\n\n5. **Unique Value Zone**  \n   A percentage score (0–100) that represents how uniquely positioned the user is to create this course, based on how aligned the course idea is with their passion, expertise, and experience.\n\n# How to Calculate Unique Value Zone\nUse a point system with the following scoring criteria:\n\n- **Expertise match**: 0–30 points  \n  → How much does the course content align with the user’s core skills?\n\n- **Experience match**: 0–30 points  \n  → Has the user lived through or taught this topic before?\n\n- **Passion match**: 0–30 points  \n  → Is the user deeply passionate about the course topic?\n\n- **Audience clarity**: 0–10 points  \n  → Is the course perfectly suited for their defined audience?\n\nAdd the total score and convert it into a percentage out of 100.\n\n# Output Format\nReturn only the following JSON object:\n\n```json\n{\n  \"coursetitle\": \"insert course title here\",\n  \"target audience\": \"insert target audience here\",\n  \"pain point\": \"insert pain point here\",\n  \"transformation\": \"insert transformation here\",\n  \"uniquevaluezone\": 85\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1840,
+        208
+      ],
+      "id": "fdf90f3e-7d72-463e-b1bf-7b080dcd896f",
+      "name": "Course Idea Creator Agent"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"coursetitle\": \"insert course title here\",\n  \"target audience\": \"insert target audience here\",\n  \"pain point\": \"insert pain point here\",\n  \"transformation\": \"insert transformation here\",\n  \"uniquevaluezone\": 85\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2128,
+        448
+      ],
+      "id": "2096dec8-d3f5-46cc-a3e4-67d253943995",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        288
+      ],
+      "id": "a6275254-61a6-4c3a-828e-42ccc153aed9",
+      "name": "Start Course Creation",
+      "webhookId": "a4923426-5f3c-4ab9-b9dc-c38d988b677a"
+    },
+    {
+      "parameters": {
+        "content": "## Course Creator Agent ",
+        "height": 660,
+        "width": 1260,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        32
+      ],
+      "id": "f378936c-36c2-48d2-9027-84bffa1ed992",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Course Title: {{ $json['Course Title'] }}\nTarget Audience: {{ $json['Target Audience'] }}\nPain Point: {{ $json['Pain Point'] }}\nTransformation: {{ $json.Transformation }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Role\nYou are an expert Course Module Designer agent. Your job is to create 4 short, powerful main course modules plus 2 bonus modules, based on the provided course context.\n\n# Input\nYou will receive the following course information:\n\n- Course Title\n- Target Audience\n- Pain Point\n- Transformation\n\n# Instructions\n1. Generate **4 core modules** and **2 bonus modules**.\n2. Each module title must:\n   - Start with `\"Module X: \"` or `\"Bonus Module X: \"`\n   - Be **under 10 words**\n   - Be clear, actionable, and reflect the transformation journey\n3. For each module, include a **20-word description**.\n4. Modules should build logically from start to finish.\n\n# Output Format\nReturn ONLY the following JSON:\n\n```json\n{\n  \"module1\": \"Module 1: [short module title here]\",\n  \"module1desc\": \"[20-word description here]\",\n  \"module2\": \"Module 2: [short module title here]\",\n  \"module2desc\": \"[20-word description here]\",\n  \"module3\": \"Module 3: [short module title here]\",\n  \"module3desc\": \"[20-word description here]\",\n  \"module4\": \"Module 4: [short module title here]\",\n  \"module4desc\": \"[20-word description here]\",\n  \"bonusmodule1\": \"Bonus Module 1: [short bonus module title here]\",\n  \"bonusmodule1desc\": \"[20-word description here]\",\n  \"bonusmodule2\": \"Bonus Module 2: [short bonus module title here]\",\n  \"bonusmodule2desc\": \"[20-word description here]\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        432,
+        848
+      ],
+      "id": "2e74512c-c420-489f-a7e8-350c3d6f4433",
+      "name": "Module Creator Agent"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"module1\": \"Module 1: [short module title here]\",\n  \"module1desc\": \"[20-word description here]\",\n  \"module2\": \"Module 2: [short module title here]\",\n  \"module2desc\": \"[20-word description here]\",\n  \"module3\": \"Module 3: [short module title here]\",\n  \"module3desc\": \"[20-word description here]\",\n  \"module4\": \"Module 4: [short module title here]\",\n  \"module4desc\": \"[20-word description here]\",\n  \"bonusmodule1\": \"Bonus Module 1: [short bonus module title here]\",\n  \"bonusmodule1desc\": \"[20-word description here]\",\n  \"bonusmodule2\": \"Bonus Module 2: [short bonus module title here]\",\n  \"bonusmodule2desc\": \"[20-word description here]\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        1088
+      ],
+      "id": "48f0db3e-bdcc-4022-b006-57c3ec2ddef4",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl8bli7aNGBxbdbr",
+          "mode": "list",
+          "cachedResultName": "Modules",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tbl8bli7aNGBxbdbr"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Module": "={{$json.module}}",
+            "Description": "={{$json.description}}",
+            "Course Overview": "={{ [$('Start Module').item.json.id] }}",
+            "User": "={{[ $('Start Module').item.json.User[0] ]}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Module",
+              "displayName": "Module",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Sub Modules",
+              "displayName": "Sub Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created Time",
+              "displayName": "Created Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified Time",
+              "displayName": "Last Modified Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Record Id",
+              "displayName": "Record Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Course Overview",
+              "displayName": "Course Overview",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        848
+      ],
+      "id": "4846d99b-c9d7-4493-a316-ff6c20ace0f4",
+      "name": "Update Modules"
+    },
+    {
+      "parameters": {
+        "content": "## Module Creator",
+        "height": 540,
+        "width": 1160,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        48,
+        704
+      ],
+      "id": "e4d6416f-3f1e-4e8f-bac4-e211c367d2a8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Sub-Module Creator",
+        "height": 540,
+        "width": 1320,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        720
+      ],
+      "id": "de1e701c-a23d-462d-b70d-593967f06534",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1680,
+        768
+      ],
+      "id": "f93ea8b9-21d8-483c-9bbf-f899aeb42e20",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "Modules",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        768
+      ],
+      "id": "b0b46fd6-b6c7-4096-bb90-8ab316d28ca5",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"submodules\": [\n    {\n      \"title\": \"1.1 [Submodule Title]\",\n      \"bullets\": [\n        \"First important teaching point\",\n        \"Second point that explains a concept\",\n        \"Third point that includes examples or guidance\"\n      ]\n    },\n    {\n      \"title\": \"1.2 [Submodule Title]\",\n      \"bullets\": [\n        \"...\"\n      ]\n    },\n    {\n      \"title\": \"1.3 [Submodule Title]\",\n      \"bullets\": [\n        \"...\"\n      ]\n    },\n    {\n      \"title\": \"1.4 [Submodule Title]\",\n      \"bullets\": [\n        \"...\"\n      ]\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2080,
+        1104
+      ],
+      "id": "c17a886a-6108-40c2-833b-d62f90adaf54",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "filterByFormula": "Status = \"Pending\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        848
+      ],
+      "id": "a6536442-3e0e-4681-b626-f8cd0b39f1c8",
+      "name": "Start Module"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $json.output;\n\nreturn [\n  {\n    json: {\n      module: output.module1,\n      description: output.module1desc\n    }\n  },\n  {\n    json: {\n      module: output.module2,\n      description: output.module2desc\n    }\n  },\n  {\n    json: {\n      module: output.module3,\n      description: output.module3desc\n    }\n  },\n  {\n    json: {\n      module: output.module4,\n      description: output.module4desc\n    }\n  },\n  {\n    json: {\n      module: output.bonusmodule1,\n      description: output.bonusmodule1desc\n    }\n  },\n  {\n    json: {\n      module: output.bonusmodule2,\n      description: output.bonusmodule2desc\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        848
+      ],
+      "id": "62962a13-19ba-4f7d-95b4-a25a9a78d09a",
+      "name": "Module Code"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Modules Generated",
+            "id": "={{ $json.fields['Course Overview'][0] }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true
+            },
+            {
+              "id": "Course Title",
+              "displayName": "Course Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Target Audience",
+              "displayName": "Target Audience",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Pain Point",
+              "displayName": "Pain Point",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Transformation",
+              "displayName": "Transformation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Unique Value Zone ",
+              "displayName": "Unique Value Zone ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Modules Generated",
+                  "value": "Modules Generated"
+                },
+                {
+                  "name": "Scripts Generated",
+                  "value": "Scripts Generated"
+                },
+                {
+                  "name": "Landing Page Generated",
+                  "value": "Landing Page Generated"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Modules",
+              "displayName": "Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Created Time",
+              "displayName": "Created Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified Time",
+              "displayName": "Last Modified Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Record ID",
+              "displayName": "Record ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1008,
+        848
+      ],
+      "id": "b2d0e39c-129f-4b5b-9b3b-3f884158bc6d",
+      "name": "Module Created"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "filterByFormula": "Status = \"Modules Generated\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1488,
+        928
+      ],
+      "id": "5bb27c0e-5ded-4791-ae6b-a71e8330389c",
+      "name": "Start Submodules"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl8bli7aNGBxbdbr",
+          "mode": "list",
+          "cachedResultName": "Modules",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tbl8bli7aNGBxbdbr"
+        },
+        "id": "={{ $json.Modules }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1712,
+        928
+      ],
+      "id": "d45efd25-8576-40fe-a6ba-e7a706f460bc",
+      "name": "Get Each Module"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Course Title:  {{ $('Start Submodules').item.json['Course Title'] }}\nModule: {{ $json.Module }}\nModule Description: {{ $json.Description }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Role\nYou are a Submodule Breakdown Agent. Your job is to break down a single course module into exactly 4 structured submodules. Each submodule must help the user teach one logical part of the module content in a future course script.\n\n# Input\nYou will receive:\n\n- Course Title\n- Module Title\n- Module Description\n\n# Instructions\n1. Generate exactly **4 submodules**.\n2. Each submodule must:\n   - Start with its module number prefix (e.g., `1.1`, `1.2`, etc.) in the title\n   - For Bonus sub modules start with bonus prefix (e.g. 'b1.1', 'b1.2', etc.) in the title\n   - Be short and specific (under 10 words if possible)\n   - Include a **bullet-point description** with **3 to 5 actionable points**\n   - Each bullet must contain useful teaching content, not fluff\n3. The bullets will be later joined into one string for Airtable.\n\n# Output Format\nReturn only the following JSON object:\n\n```json\n{\n  \"submodules\": [\n    {\n      \"title\": \"1.1 [Submodule Title]\",\n      \"bullets\": [\n        \"First important teaching point\",\n        \"Second point that explains a concept\",\n        \"Third point that includes examples or guidance\"\n      ]\n    },\n    {\n      \"title\": \"1.2 [Submodule Title]\",\n      \"bullets\": [\n        \"...\"\n      ]\n    },\n    {\n      \"title\": \"1.3 [Submodule Title]\",\n      \"bullets\": [\n        \"...\"\n      ]\n    },\n    {\n      \"title\": \"1.4 [Submodule Title]\",\n      \"bullets\": [\n        \"...\"\n      ]\n    }\n  ]\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1888,
+        928
+      ],
+      "id": "87f26845-5c52-47a8-a509-0a59f9a69897",
+      "name": "Submodule Creator Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const submodules = $json.output.submodules;\n\nreturn submodules.map(sub => {\n  return {\n    json: {\n      title: sub.title,\n      description: '- ' + sub.bullets.join('\\n- ')  // bullet points nicely formatted\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        928
+      ],
+      "id": "8bf877d6-ba88-4f44-94b9-e72994475c83",
+      "name": "Submodule Code"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblCfENgLoXXol08P",
+          "mode": "list",
+          "cachedResultName": "Sub Modules",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblCfENgLoXXol08P"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Sub Module": "={{ $json.title }}",
+            "Description": "={{ $json.description }}",
+            "Modules": "={{ [$('Get Each Module').item.json['Record Id']] }}",
+            "Course Overview": "={{ [$('Get Each Module').item.json['Course Overview'][0]] }}",
+            "User Database": "={{ [$('Start Submodules').item.json.User[0]] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Sub Module",
+              "displayName": "Sub Module",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Scripts",
+              "displayName": "Scripts",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Modules",
+              "displayName": "Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Course Overview",
+              "displayName": "Course Overview",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User Database",
+              "displayName": "User Database",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2352,
+        928
+      ],
+      "id": "143a33bf-8912-4f5e-87fc-3f54650e8b5d",
+      "name": "Update Submodules"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Submodules Generated",
+            "id": "={{ $json.fields['Course Overview'][0] }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Course Title",
+              "displayName": "Course Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Target Audience",
+              "displayName": "Target Audience",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Pain Point",
+              "displayName": "Pain Point",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Transformation",
+              "displayName": "Transformation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Unique Value Zone ",
+              "displayName": "Unique Value Zone ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Modules Generated",
+                  "value": "Modules Generated"
+                },
+                {
+                  "name": "Submodules Generated",
+                  "value": "Submodules Generated"
+                },
+                {
+                  "name": "Scripts Generated",
+                  "value": "Scripts Generated"
+                },
+                {
+                  "name": "Landing Page Generated",
+                  "value": "Landing Page Generated"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Modules",
+              "displayName": "Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Created Time",
+              "displayName": "Created Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified Time",
+              "displayName": "Last Modified Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Record ID",
+              "displayName": "Record ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Sub Modules",
+              "displayName": "Sub Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1952,
+        768
+      ],
+      "id": "c3e463b3-e2fc-4f71-9c6c-e6a936109439",
+      "name": "Submodules Created"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblkKA17qpw0Yh2U4",
+          "mode": "list",
+          "cachedResultName": "User Database",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblkKA17qpw0Yh2U4"
+        },
+        "filterByFormula": "=User = \"{{ $('Start Course Creation').item.json.callback_query.data }}\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1648,
+        288
+      ],
+      "id": "de4f396d-a1f9-4fe0-ac3d-89c91bfbdac7",
+      "name": "Start Course"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Course Title": "={{ $json.output.coursetitle }}",
+            "Target Audience": "={{ $json.output['target audience'] }}",
+            "Pain Point": "={{ $json.output['pain point'] }}",
+            "Transformation": "={{ $json.output.transformation }}",
+            "Unique Value Zone ": "={{ $json.output.uniquevaluezone }}",
+            "Status": "Pending",
+            "User": "={{[ $('Start Course').item.json.id] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Course Title",
+              "displayName": "Course Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Target Audience",
+              "displayName": "Target Audience",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Pain Point",
+              "displayName": "Pain Point",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Transformation",
+              "displayName": "Transformation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Unique Value Zone ",
+              "displayName": "Unique Value Zone ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Modules Generated",
+                  "value": "Modules Generated"
+                },
+                {
+                  "name": "Submodules Generated",
+                  "value": "Submodules Generated"
+                },
+                {
+                  "name": "Scripts Generated",
+                  "value": "Scripts Generated"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Modules",
+              "displayName": "Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Created Time",
+              "displayName": "Created Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified Time",
+              "displayName": "Last Modified Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Record ID",
+              "displayName": "Record ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Sub Modules",
+              "displayName": "Sub Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Scripts",
+              "displayName": "Scripts",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2224,
+        224
+      ],
+      "id": "2ffe4749-c8fb-4e75-ae34-a5de101d930e",
+      "name": "Courses Created"
+    },
+    {
+      "parameters": {
+        "content": "## Script Creator",
+        "height": 720,
+        "width": 1460,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        1312
+      ],
+      "id": "6759dae4-d0a2-44a8-ba63-21ba9b8f08e8",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "filterByFormula": "Status = \"Submodules Generated\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        320,
+        1568
+      ],
+      "id": "3cd7fa7e-9ee5-44bd-99f5-cd0e3c7624d0",
+      "name": "Start Scripts"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "['Sub Modules']",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        592,
+        1424
+      ],
+      "id": "12ae9699-0d83-48f0-b1b7-9eb67dcd9ab2",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        848,
+        1424
+      ],
+      "id": "267c211f-b492-494a-94f6-e5f036dbbc6e",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"script\": \"Welcome to submodule 1.1, 'Identify Target Audience'...\\n\\nUnderstanding your audience is the foundation...\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1184,
+        1840
+      ],
+      "id": "fc346ddd-7fd0-44fc-beaa-da97b0e2b791",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblSe8gL1UsOcaava",
+          "mode": "list",
+          "cachedResultName": "Scripts",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblSe8gL1UsOcaava"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Script": "={{ $json.output.script }}",
+            "Sub Modules": "={{ [$('Split Out1').item.json['[\\'Sub Modules\\']']] }}",
+            "Modules": "={{[ $('Get Submodules').item.json.Modules[0] ]}}",
+            "Course Overview": "={{ [$('Get Submodules').item.json['Course Overview'][0] ]}}",
+            "User": "={{[ $('Get Submodules').item.json['User Database'][0]] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Script",
+              "displayName": "Script",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Record Id",
+              "displayName": "Record Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Sub Modules",
+              "displayName": "Sub Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Modules",
+              "displayName": "Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Course Overview",
+              "displayName": "Course Overview",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1264,
+        1648
+      ],
+      "id": "7c65f4ee-c082-47e5-a64d-e9cc4965ef68",
+      "name": "Create Script"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblCfENgLoXXol08P",
+          "mode": "list",
+          "cachedResultName": "Sub Modules",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblCfENgLoXXol08P"
+        },
+        "id": "={{ $json['[\\'Sub Modules\\']'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        1680
+      ],
+      "id": "f70a0b41-4daa-40ea-a9ea-459e0181851d",
+      "name": "Get Submodules"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Start Scripts').item.json.id }}",
+            "Status": "Scripts Generated"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Course Title",
+              "displayName": "Course Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Target Audience",
+              "displayName": "Target Audience",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Pain Point",
+              "displayName": "Pain Point",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Transformation",
+              "displayName": "Transformation",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Unique Value Zone ",
+              "displayName": "Unique Value Zone ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Modules Generated",
+                  "value": "Modules Generated"
+                },
+                {
+                  "name": "Submodules Generated",
+                  "value": "Submodules Generated"
+                },
+                {
+                  "name": "Scripts Generated",
+                  "value": "Scripts Generated"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Modules",
+              "displayName": "Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Created Time",
+              "displayName": "Created Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified Time",
+              "displayName": "Last Modified Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Record ID",
+              "displayName": "Record ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Sub Modules",
+              "displayName": "Sub Modules",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "New table",
+              "displayName": "New table",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1168,
+        1408
+      ],
+      "id": "cc61d96d-d9a2-43d1-ae84-a1ebd3862533",
+      "name": "Scripts Generated"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1872
+      ],
+      "id": "9a598d7d-d0eb-42fc-b6d8-a6a0b09e3cfb",
+      "name": "gpt 4o"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        1120
+      ],
+      "id": "e756c775-7b88-430d-a902-654058a57211",
+      "name": "gpt 4o mini"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        304,
+        1072
+      ],
+      "id": "63ef150c-259e-4691-bc40-b22ba60d7ad5",
+      "name": "gpt 4o mini1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        448
+      ],
+      "id": "759926df-0f6d-42ae-8efa-566fa6430a04",
+      "name": "gpt 4o mini2"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblN4BjSK2Nd7xypU",
+          "mode": "list",
+          "cachedResultName": "Course Overview",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblN4BjSK2Nd7xypU"
+        },
+        "filterByFormula": "=User= \"{{ $('Start Course').item.json.User }}\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.1,
+      "position": [
+        1920,
+        448
+      ],
+      "id": "b78e4b2e-2e2f-4179-9987-0c83935038dc",
+      "name": "searchCourse"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        112,
+        240
+      ],
+      "id": "bdbd49a9-d457-4875-aad6-a1ed29f1709c",
+      "name": "Telegram Trigger",
+      "webhookId": "e35afcef-af3a-4409-a29e-427c45b85740"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/startnew",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "8cb736cc-884c-4658-aa6b-cef33e98b1eb"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "startnew"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "57bc00c2-b81c-4e06-8769-3c12708a0ab3",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/existing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "existing user"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        448,
+        224
+      ],
+      "id": "71a58c26-e318-44f7-b233-7708238071d5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "463aa4f9-ea94-4d74-bf53-0b068a8ebaf9",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/startnew",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "673bf965-eabe-40c1-aff9-a2497a882793",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/existing",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        240
+      ],
+      "id": "28a10875-a572-4af5-8517-80c5708eff54",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=Please choose one of the options to start the course creation: \n1️⃣ /startnew -> for new user \n2️⃣ /existing -> for existing user ",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        448
+      ],
+      "id": "b0e9f3ee-bf84-498c-a070-bb4dac442a98",
+      "name": "Telegram",
+      "webhookId": "186ffcb9-ed8f-439c-8f0b-db13c7b21355"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $json.message.from.id }}",
+        "message": "=Hey there buddy, happy to have you here and am super excited to be creating the ultimate course for you. \n\nBefore we get started, I would need some information from you: ",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "👋🏻 What's your name? ",
+              "placeholder": "Your beautiful name! ",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "🍳 What's your expertise? ",
+              "placeholder": "=What do people usually go to you for advice on? (marketing, relationships, sports etc)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "🧠 What experience or skillset do you have? ",
+              "placeholder": "Your strengths, experiences, degree etc. ",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "🔥 What's your passion?",
+              "placeholder": "=What topics do you love to talk about, teach, go deep or spend your free time on? What keeps you up at night?",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "👨‍👩‍👧‍👦  Who could be your audience? ",
+              "placeholder": "=Who do you want to help most? (couples, dads, new mons, entrepreneurs, coaches)",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        64
+      ],
+      "id": "fcb6a87b-fe55-47f7-9ad7-85880b13114b",
+      "name": "New User",
+      "webhookId": "fda3287f-5671-46d6-86cf-adade9b0052e"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblkKA17qpw0Yh2U4",
+          "mode": "list",
+          "cachedResultName": "User Database",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblkKA17qpw0Yh2U4"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "User": "={{ $json.data['👋🏻 What\\'s your name? '] }}",
+            "Expertise": "={{ $json.data['🍳 What\\'s your expertise? '] }}",
+            "Experience": "={{ $json.data['🧠 What experience or skillset do you have? '] }}",
+            "Passion": "={{ $json.data['🔥 What\\'s your passion?'] }}",
+            "Audience": "={{ $json.data['👨‍👩‍👧‍👦  Who could be your audience? '] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Expertise",
+              "displayName": "Expertise",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Experience",
+              "displayName": "Experience",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Passion",
+              "displayName": "Passion",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Audience",
+              "displayName": "Audience",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Courses",
+              "displayName": "Courses",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Created TIme",
+              "displayName": "Created TIme",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Last Modified Time",
+              "displayName": "Last Modified Time",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Record Id",
+              "displayName": "Record Id",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        64
+      ],
+      "id": "267a3d42-5c55-4015-981f-87ee2860c241",
+      "name": "Create User"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst buttons = items\n  .filter(item => !!item.json.User)\n  .map(item => [\n    {\n      text: item.json.User,\n      callback_data: item.json.User\n    }\n  ]);\n\nreturn [\n  {\n    json: {\n      reply_markup: {\n        inline_keyboard: buttons\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        480
+      ],
+      "id": "08c0e8be-d78d-4233-a96f-2d16a829d2cb",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot<insertAPIkey>/sendmessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"116486546\",\n  \"text\": \"What's your name?\",\n  \"parse_mode\": \"HTML\",\n  \"reply_markup\": {\n    \"inline_keyboard\": {{ JSON.stringify($json.reply_markup.inline_keyboard) }}\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        928,
+        304
+      ],
+      "id": "7ed69510-cbcb-45f2-b2a6-97f348b90136",
+      "name": "Ask Name"
+    },
+    {
+      "parameters": {
+        "content": "## New/Existing User\n",
+        "height": 660,
+        "width": 1180
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0f92e9a3-82bf-41e2-9454-ef9a91dfb942",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appR9vWzVuDaRbspJ",
+          "mode": "list",
+          "cachedResultName": "Course Creator",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblkKA17qpw0Yh2U4",
+          "mode": "list",
+          "cachedResultName": "User Database",
+          "cachedResultUrl": "https://airtable.com/appR9vWzVuDaRbspJ/tblkKA17qpw0Yh2U4"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        320
+      ],
+      "id": "97a3d3ea-f99c-472f-a0cb-394abe6ded3d",
+      "name": "Search User"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        848
+      ],
+      "id": "8a7f0aef-62cf-4b68-90eb-a42464af50e0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        928
+      ],
+      "id": "6dbcbb7a-7c1c-4e94-8ffc-272424b74d7e",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        112,
+        1568
+      ],
+      "id": "19fae1a4-dbd3-492e-b6af-554e6083d2f0",
+      "name": "Schedule Trigger2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Course Title: {{ $('Start Scripts').item.json['Course Title'] }}\nTarget Audience: {{ $('Start Scripts').item.json['Target Audience'] }}\nPain Point: {{ $('Start Scripts').item.json['Pain Point'] }}\nTransformation: {{ $('Start Scripts').item.json.Transformation }}\n\nModule: {{ $json['Module (from Modules)'][0] }}\nSubModule: {{ $json['Sub Module'] }}\nSubModule Description: {{ $json.Description }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# Role\nYou are a professional course scriptwriter agent. Your job is to write a complete, long-form teaching script for a given submodule, using bullet-point instructions and the full context of the course and module.\n\n# Input\nYou will receive the following context:\n\n- Course Title\n- Target Audience\n- Pain Point\n- Transformation\n\n- Module\n- Submodule\n- Submodule Description (Bullets) \n  \n# Task\nWrite a **detailed, structured, long-form script** for the given submodule. Follow these instructions strictly:\n\n1. Convert the **bullet points** into **paragraphs**.\n2. Ensure the script:\n   - Flows logically from introduction → body → recap\n   - Is suitable to be read aloud by a course creator or used directly in a teleprompter\n   - Includes practical examples, explanations, and motivational tone where helpful\n3. Write in a **clear, human voice**, but sound like an expert teacher.\n4. Be concise where possible, but do **not** shorten the material unnaturally.\n5. End with a **strong ending and recap** of the video with ending such as \"see you in the next video\".\n\n# Output Format\nReturn only this JSON object:\n\n```json\n{\n  \"script\": \"Insert the full, formatted course script for the submodule here as a single long-form string.\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        928,
+        1648
+      ],
+      "id": "31894f34-add9-41c8-965a-95bf2a60219b",
+      "name": "Scriptwriter Agent"
+    }
+  ],
+  "connections": {
+    "Start Course Ideation": {
+      "main": [
+        [
+          {
+            "node": "Start Course",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Course Idea Creator Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Course Creation": {
+      "main": [
+        [
+          {
+            "node": "Start Course Ideation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Course Idea Creator Agent": {
+      "main": [
+        [
+          {
+            "node": "Courses Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Module Creator Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Module Creator Agent": {
+      "main": [
+        [
+          {
+            "node": "Module Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Modules": {
+      "main": [
+        [
+          {
+            "node": "Module Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Submodules Created",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Each Module",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Submodule Creator Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Module": {
+      "main": [
+        [
+          {
+            "node": "Module Creator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Module Code": {
+      "main": [
+        [
+          {
+            "node": "Update Modules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Submodules": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Each Module": {
+      "main": [
+        [
+          {
+            "node": "Submodule Creator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submodule Creator Agent": {
+      "main": [
+        [
+          {
+            "node": "Submodule Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submodule Code": {
+      "main": [
+        [
+          {
+            "node": "Update Submodules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Submodules": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Course": {
+      "main": [
+        [
+          {
+            "node": "Course Idea Creator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Scripts": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Scripts Generated",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Submodules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Scriptwriter Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Submodules": {
+      "main": [
+        [
+          {
+            "node": "Scriptwriter Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Script": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt 4o": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Scriptwriter Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt 4o mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Submodule Creator Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt 4o mini1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Module Creator Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gpt 4o mini2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Course Idea Creator Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "searchCourse": {
+      "ai_tool": [
+        [
+          {
+            "node": "Course Idea Creator Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "New User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New User": {
+      "main": [
+        [
+          {
+            "node": "Create User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Ask Name",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search User": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Start Module",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Start Submodules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger2": {
+      "main": [
+        [
+          {
+            "node": "Start Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scriptwriter Agent": {
+      "main": [
+        [
+          {
+            "node": "Create Script",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 0,
+  "meta": null
+}
